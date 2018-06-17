@@ -1,0 +1,304 @@
+---
+title: "R-41일차(2018.2.23)"
+---
+
+```{r}
+18*25000-220000
+```
+```{r}
+memory.limit()
+```
+
+-----------------------------
+
+{wine 추가 연구}
+
+# 회귀분석 모델 생성(train data set)
+```{r}
+modelTrain <- lm(quality~., data = wine_train)
+summary(modelTrain)
+```
+Estimate : 계수추정값
+Std. Error : 표준에러
+t value : 
+Pr(>|t|) : 
+*** : 제일 좋은 거 
+
+```{r}
+preTest <- predict(modelTrain, wine_test)
+cor(preTest, wine_test[12]) # 0.5670684
+
+# mean absolute error function
+MAE <- function(actual, predicted) {
+  mean(abs(actual - predicted))  
+}
+
+MAE(wine_test[,12],preTest)
+MAE(wine_test[,12],mean(wine_train[,12]))
+```
+
+
+# 위 결과를 향상시켜보자
+```{r}
+# 관련성 높은 항목(***)만 보자
+
+modelTrainNew <- lm(quality~volatile.acidity, data = wine_train)
+summary(modelTrainNew)
+```
+
+```{r}
+confint(modelTrainNew) # 회귀계수의 95% 신뢰구간
+preTestNew <- predict(modelTrainNew, wine_test)
+cor(preTestNew, wine_test[12])
+MAE(preTestNew, wine_test[,12])
+MAE(wine_test[,12],mean(wine_train[,12]))
+```
+
+
+```{r}
+par(mfrow = c(2,2))
+plot(modelTrainNew)
+```
+
+첫번째 플롯은 잔차 플롯으로, dist의 적합값과 잔차를 그린 플롯이다. 
+잔차의 등분산성과 독립성을 검정하기 위한 플롯이다.
+
+두번째 플롯은 정규 플롯으로, 잔차의 정규성을 검정하기 위한 플롯이다.
+
+세번째 플롯은 표준화 잔차 플롯으로, 잔차플롯과 비슷하다.
+
+네번째 플롯은 지레-잔차 플롯으로, X값과 Y값의 특이값을 찾아내는데 유용한 플롯이다.
+
+plot()은 generic function이 인자로 선형 회귀 모델을 주면 plot.lm()이 자동으로 호출된다. 
+plot.lm()이 그리는 차트는 위의 4가지 외에도 2가지가 더있다.
+
+```{r}
+par(mfrow = c(1, 2))
+plot(modelTrainNew, which = c(4, 6))
+```
+첫번째 플롯은 관찰값별 Cook's Distance(Cook의 거리)를 구한 것으로, 이상치를 판별하는데 사용된다.
+두번째 플롯은 Cook의 거리와 지레값을 플롯한 것으로, X공간과 Y공간의 이상치를 동시에 판별하는데 사용된다.
+
+
+# 와인품질 검사를 의뢰받았다 
+
+```{r}
+# 전체 데이터 바탕으로 모델생성
+m1 <- rpart(quality~.,data = wine)
+
+# 결정트리 육안확인 
+rpart.plot(m1, digits = 3)
+```
+
+ - 정보획득량 
+```{r}
+library(FSelector)
+library(doBy)
+
+# 엔트로피 높은 순 으로 정렬(결정트리 구분 순서)
+orderBy(~-attr_importance, information.gain(quality~.,wine))
+```
+
+```{r}
+library(rattle)				# Fancy tree plot
+library(rpart.plot)			# Enhanced tree plots
+library(RColorBrewer)
+fancyRpartPlot(m1, digits = 3, type = 1, palettes = "YlOrBr")
+```
+
+
+```{r}
+str(wine)
+test <- wine[sample(10),]
+res <- predict(m1, test)
+```
+
+
+```{r}
+summary(test[,12])
+summary(res)
+cor(res, test[12])  # 0.7963906 : 매우 강한 양(+)의 상관관계
+```
+
+
+# 회귀분석으로 해본다면?
+```{r}
+names(wine)
+```
+
+```{r}
+cor(wine)
+```
+
+```{r}
+m3 <- lm(quality~., data = wine)
+m3
+res1 <- predict(m3, test)
+res1
+cor(res1, test[12]) 
+```
+
+Call:
+lm(formula = quality ~ ., data = wine)
+
+Coefficients:
+         (Intercept)         fixed.acidity      volatile.acidity           citric.acid  
+           1.502e+02             6.552e-02            -1.863e+00             2.209e-02  
+      residual.sugar             chlorides   free.sulfur.dioxide  total.sulfur.dioxide  
+           8.148e-02            -2.473e-01             3.733e-03            -2.857e-04  
+             density                    pH             sulphates               alcohol  
+          -1.503e+02             6.863e-01             6.315e-01             1.935e-01  
+
+* 상관계수
+quality~fixed.acidity : -0.417434
+                   quality~volatile.acidity : 0.5172917
+quality~citric.acid : -0.5796099
+quality~residual.sugar : -0.3054133
+quality~chlorides : 0.1233739
+                   quality~free.sulfur.dioxide : 0.7553876
+quality~total.sulfur.dioxide : -0.5930021
+quality~density : -0.05788868
+quality~pH : -0.4385926
+quality~sulphates : -0.3139259
+quality~alcohol : 0.2210752
+
+
+```{r}
+library(ggplot2)
+ggplot(test)+
+  geom_point(aes(x=residual.sugar,y=quality))+
+  geom_line(aes(x=residual.sugar,y=res1))
+```
+
+
+```{r}
+cor(wine) - diag(diag(cor(wine)))
+```
+
+
+-----------------------------------
+
+{havehome.csv text mining}
+
+```{r}
+home <- read.table("c:/r/havehome.csv", sep = ",", encoding = "UTF-8", stringsAsFactors = F)
+head(home)
+```
+
+
+```{r}
+names(home) <- 'text'
+head(home$text)
+```
+
+
+```{r}
+library(KoNLP)
+useNIADic()
+library(NIADic)
+```
+
+```{r}
+iDic <- get_dictionary("insighter")
+wDic <- get_dictionary("woorimalsam")
+```
+
+
+```{r}
+citation("NIADic")
+```
+
+```{r}
+buildDictionary(ext_dic="woorimalsam",user_dic=data.frame("저축통장","ncn"),replace_usr_dic=F)
+buildDictionary(ext_dic="woorimalsam",user_dic=data.frame("청약통장","ncn"),replace_usr_dic=F)
+buildDictionary(ext_dic="woorimalsam",user_dic=data.frame("매매","ncn"),replace_usr_dic=F)
+```
+
+
+```{r}
+text1 <- unlist(extractNoun(home$text))
+text2 <- unlist(strsplit(text1, "[A-z]|[[:punct:]]|[0-9]|(ㅜ)|(ㅠ)"))
+text3 <- text2[text2 != ""]
+text4 <- text3[nchar(text3) > 1]
+text4 <- gsub("했었는데", "했었는데 ", text4)
+text4 <- text4[-grep("정도|이상|중인|하니|안나|들이|(때문$)|(하려$)|안녕|해서",text4)]
+text4 <- gsub("팟캐스트에서도","팟캐스트",text4)
+text4 <- gsub("것들만실거래에","실거래",text4)
+text4 <- gsub("실거래가","실거래",text4)
+text4 <- gsub("트실거래","실거래",text4)
+text4 <- gsub("중인데예산을","예산",text4)
+text4 <- gsub("ㅎ예산이","예산",text4)
+text4 <- gsub("매매하러올분들이","매매",text4)
+text4 <- gsub("부동산.+", "부동산", text4)
+text4 <- gsub(".+부동산+", "부동산", text4)
+text4 <- gsub(".+청약|청약.+", "청약", text4)
+text4 <- gsub("전세값", "전세금", text4)
+text4 <- gsub("전세자.+", "전세금", text4)
+text4 <- gsub("전세[^가|보].+", "전세", text4)
+text5 <- sort(table(text4), decreasing = T)
+text6 <- text5[text5>=15]
+text6
+```
+
+
+```{r}
+library(wordcloud)
+library(wordcloud2)
+wordcloud(names(text6), freq=text6, min.freq=1, random.order=F, random.color =T,
+          colors=brewer.pal(8,'Dark2'))
+```
+
+```{r}
+wordcloud2(text6, size = .6, shape='eclipes')
+```
+
+
+```{r}
+word <- extractNoun(home$text)
+keyword <- names(text6)
+data<-c()
+for (i in 1:length(word)){
+  index<-intersect(word[[i]],keyword)
+  data<-rbind(data,table(index)[keyword])
+}
+data
+```
+
+
+```{r}
+data <- ifelse(is.na(data),0,data)
+colnames(data) <- keyword
+data
+```
+
+
+```{r}
+df <- as.data.frame(data)
+data1 <- as.matrix(df, "Transaction")
+library(arules)
+rules <- apriori(data1, parameter = list(supp = 0.13, conf = 0.4, minlen = 2, target = "rules"))
+inspect(sort(rules,decreasing = T))
+```
+
+```{r}
+mat <- t(data1)%*%data1
+mat1 <- mat - diag(diag(mat))
+```
+
+
+
+```{r}
+library(sna)
+library(rgl)
+gplot(mat1)
+```
+
+
+
+
+
+
+
+
+
+

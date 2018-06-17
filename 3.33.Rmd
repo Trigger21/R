@@ -1,0 +1,456 @@
+---
+title : 'R-33일차(2018.2.9)'
+---
+
+    33-1. 베이즈 정리 응용
+
+[문제225] 2월1일 흐릴 확률은 0.6이고 다음날인 2일 비가 올 확률은 0.4였다. 
+          또한 1일 날 흐릴때 다음 날 2일에 비가 올 확률은 0.5이다. 
+          이지역에서 2일에 비가 왔을때 전날인 1일날 흐릴 확률은?
+
+A : 2.1 흐릴 사건
+B : 2.2 비올 사건
+
+P(A) = 0.6
+P(B) = 0.4
+P(B|A) = 0.5
+  
+  P(A|B) = P(B|A)*P(A) / P(B) 
+         = 0.5*0.6/0.4
+         = 0.75
+         
+```{r}
+0.5*0.6/0.4
+```
+
+# 33-1. 베이즈 정리
+
+A : 원인, 결과(Hypothesis) -> H
+B : 결과, 데이터(Data)     -> D
+
+P(H|D) = P(D|H)P(H)/P(D)
+                                    H 아래서 D가 생길확률 * H가 성립할 확률
+D가 얻어졌을때 그 원인이 H일 확률 = --------------------------------------
+                                                D가 얻어질 확률
+
+
+원인의 확률
+확률 P(H|D)는 데이터 D가 얻어졌을때 원인이 H라는 조건부 확률이다.
+즉, 데이터(D)가 주어졌을때 원인을 구하는 확률
+
+
+P(H|D) 사후확률 : 데이터 D가 얻어졌을때 원인이 H일 확률
+P(D|H) 우도 : 원인 H아래 데이터 D가 얻어질 확률
+P(H) 사전확률 : 데이터 D를 얻기 전의 원인 H가 성립될 확률 
+
+
+[문제225] 2월1일 흐릴 확률은 0.6이고 다음날인 2일 비가 올 확률은 0.4였다. 
+          또한 1일 날 흐릴때 다음 날 2일에 비가 올 확률은 0.5이다. 
+          이지역에서 2일에 비가 왔을때 전날인 1일날 흐릴 확률은?
+
+A : 2.1 흐릴 사건 -> H
+B : 2.2 비올 사건 -> D
+
+P(A) = 0.6     -> 사전확률 : 2월1일 흐릴 확률
+P(B) = 0.4     
+P(B|A) = 0.5   -> 우도 : 2월1일 흐림으로 인해 2일에 비가 오게될 확률
+P(A|B) = 0.75  -> 사후확률 : 2일에 비가 오게된다면 전날 흐림이 원인일 확률
+
+
+
+[문제226] 일반버섯(식용버섯(edible)) 과 독버섯 분류(먹을수없는버섯(poisonous)) 분류 
+
+0. 이 주소에 가셔서 mushroom 데이터 셋의 정보를 분석한 후 변수들에 어떤 의미가 들어 있는지를 확인 하세요.
+
+    https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.names
+
+* Attribute Information: (classes: edible=e, poisonous=p)
+     1. cap-shape:                bell=b,conical=c,convex=x,flat=f,
+                                  knobbed=k,sunken=s
+     2. cap-surface:              fibrous=f,grooves=g,scaly=y,smooth=s
+     3. cap-color:                brown=n,buff=b,cinnamon=c,gray=g,green=r,
+                                  pink=p,purple=u,red=e,white=w,yellow=y
+     4. bruises?:                 bruises=t,no=f
+     5. odor:                     almond=a,anise=l,creosote=c,fishy=y,foul=f,
+                                  musty=m,none=n,pungent=p,spicy=s
+     6. gill-attachment:          attached=a,descending=d,free=f,notched=n
+     7. gill-spacing:             close=c,crowded=w,distant=d
+     8. gill-size:                broad=b,narrow=n
+     9. gill-color:               black=k,brown=n,buff=b,chocolate=h,gray=g,
+                                  green=r,orange=o,pink=p,purple=u,red=e,
+                                  white=w,yellow=y
+    10. stalk-shape:              enlarging=e,tapering=t
+    11. stalk-root:               bulbous=b,club=c,cup=u,equal=e,
+                                  rhizomorphs=z,rooted=r,missing=?
+    12. stalk-surface-above-ring: fibrous=f,scaly=y,silky=k,smooth=s
+    13. stalk-surface-below-ring: fibrous=f,scaly=y,silky=k,smooth=s
+    14. stalk-color-above-ring:   brown=n,buff=b,cinnamon=c,gray=g,orange=o,
+                                  pink=p,red=e,white=w,yellow=y
+    15. stalk-color-below-ring:   brown=n,buff=b,cinnamon=c,gray=g,orange=o,
+                                  pink=p,red=e,white=w,yellow=y
+    16. veil-type:                partial=p,universal=u
+    17. veil-color:               brown=n,orange=o,white=w,yellow=y
+    18. ring-number:              none=n,one=o,two=t
+    19. ring-type:                cobwebby=c,evanescent=e,flaring=f,large=l,
+                                  none=n,pendant=p,sheathing=s,zone=z
+    20. spore-print-color:        black=k,brown=n,buff=b,chocolate=h,green=r,
+                                  orange=o,purple=u,white=w,yellow=y
+    21. population:               abundant=a,clustered=c,numerous=n,
+                                  scattered=s,several=v,solitary=y
+    22. habitat:                  grasses=g,leaves=l,meadows=m,paths=p,
+                                  urban=u,waste=w,woods=d
+
+
+1. 버섯 데이터를 로드 한다.
+```{r}
+mushroom <- read.csv("c:/r/mushroom.csv", header=F, stringsAsFactors=F)
+sum(mushroom[7] != "f")
+str(mushroom)
+```
+
+
+2. 12번째 열에 ? 표시의 데이터있는지를 확인한 후 있으면  NA 로 변경하세요.
+```{r}
+sum(mushroom[,12] == '?')
+mushroom[mushroom[,12] == '?', 12] <- NA
+```
+
+
+3. 15번째열 부터 23번째 열을 '' 비어있는 데이터를 NA 로 변경하세요.
+```{r}
+sum(mushroom[,15:23]=="")
+mushroom[which(mushroom[15:23]==""),15:23]
+mushroom[5343,15:23] <- NA
+```
+
+
+4. mushroom 전체 데이터를 factor 로 변환하시오 ! (문자는 factor로 해야지 분석가능)
+```{r}
+mushroom <- as.data.frame(as.matrix(mushroom))
+str(mushroom)
+```
+
+
+5. mushroom 데이터를 훈련 데이터와 테스트 데이터로 나눈다 ( 75% 는 훈련 데이터, 25% 는 테스트 데이터)
+```{r}
+round(5343 * .75) # 75% : 1~4007
+
+train <- mushroom[1:4007,]
+test <- mushroom[4008:5343,]
+
+str(train)
+str(test)
+```
+
+
+6. 지도학습 머신러닝 나이브 베이즈를 이용하여 독버섯과 일반 버섯을 분류하는 모델을 생성한다.
+
+```{r}
+install.packages("naivebayes")
+library(naivebayes)
+```
+
+```{r}
+install.packages("e1071")
+library(e1071)
+```
+
+```{r}
+model <- naiveBayes(train[-1], train[,1], laplace = 0)
+str(model)
+```
+
+ - 별도 
+```{r}
+attr()
+model$tables$V2
+  attr(model$tables$V2,"dimnames")
+
+naiveBayes(V1~., train)
+```
+
+
+
+7. 위에서 만든 모델로 테스트 데이터를 가지고 독버섯인지 일반버섯인지를 예측해본다.
+```{r}
+result <- predict(model,test[-1])
+result
+```
+
+
+8. 이원교차표로 모델과 실제 데이터의 차이를 비교한다.
+```{r}
+install.packages("gmodels")
+library(gmodels)  # CrossTable()
+```
+
+
+```{r}
+CrossTable(test[,1], result)
+```
+
+laplace = 0, 독버섯을 식용으로 잘못 판별 
+```{r}
+128/1139 # 11.2%
+```
+
+laplace = 1, 독버섯을 식용으로 잘못 판별
+```{r}
+66/1139 # 5.7%
+```
+
+laplace = 2, 독버섯을 식용으로 잘못 판별
+```{r}
+59/1139 # 5.1% 
+```
+
+laplace = 3, 독버섯을 식용으로 잘못 판별
+```{r}
+57/1139 # 5%
+```
+
+laplace = 10, 독버섯을 식용으로 잘못 판별
+```{r}
+43/1139 # 3.7%
+```
+
+laplace = 20(21), 독버섯을 식용으로 잘못 판별 -> 22 부터 증가(38)
+```{r}
+37/1139 # 3.2%
+```
+
+
+ - 다른 패키지 
+```{r}
+install.packages("dimRed")
+library(dimRed)
+install.packages("caret")
+library(caret)
+
+confusionMatrix(test[,1], result)
+```
+
+
+
+9. 라플라스 값 0.1 설정한 후 모델을 만든후 확인하세요.
+ 
+```{r}
+model <- naiveBayes(train[-1], train[,1], laplace = 0.1)
+result <- predict(model, test[-1])
+CrossTable(test[,1], result)
+``` 
+model3 <- naiveBayes(V1~.,  data=mushroom_train, laplace=0.1)
+result2 <- predict(model3, mushroom_test[ ,-1] )
+CrossTable(result2, mushroom_test[ , 1] )
+
+
+
+-----------------------------------------------------------------------
+
+## 1 단계 : 데이터 수집
+
+	스팸메시지, 햄메시지 데이터 수집
+
+## 2 단계 : 데이터 준비
+
+# sms 데이터 프레임으로 sms 데이터 읽기
+```{r}
+sms_raw <- read.csv("c:/r/sms_spam.csv", header = T, stringsAsFactors = FALSE)
+sms_raw
+```
+
+
+# sms 데이터 구조
+```{r}
+str(sms_raw)
+```
+
+
+# sms_raw$type(spam/ham) 팩터로 변환
+```{r}
+sms_raw$type <- factor(sms_raw$type)
+```
+
+
+# sms_raw$type변수형 확인, 빈도수 체크
+```{r}
+str(sms_raw$type)
+table(sms_raw$type)
+```
+
+
+# 텍스트 마이닝(tm) 패키지를 사용하여 말뭉치 생성
+```{r}
+#install devtools if you have not installed 
+install.packages('devtools')
+library(devtools)
+
+slam_url <- "https://cran.r-project.org/src/contrib/Archive/slam/slam_0.1-37.tar.gz"
+install_url(slam_url)
+```
+
+```{r}
+# installing/loading the package:
+if(!require(installr)) {
+install.packages("installr"); require(installr)} 
+# using the package:
+updateR()
+```
+
+
+```{r}
+install.packages("tm")
+library("tm")
+```
+
+```{r}
+sms_corpus <- Corpus(VectorSource(sms_raw$text))
+```
+
+
+# sms 말뭉치 확인
+```{r}
+sms_corpus  # documents : 5,559
+inspect(sms_corpus[1:5])
+```
+
+
+# tm_map() 사용하여 말뭉치 정리, 소문자로 변환, 숫자제거, 불용어제거, 마침표 제거, 공백제거
+```{r}
+corpus_clean <- tm_map(sms_corpus, tolower)  # 소문자 변환 
+corpus_clean <- tm_map(corpus_clean, removeNumbers)  # 숫자제거
+corpus_clean <- tm_map(corpus_clean, removeWords, stopwords())
+corpus_clean <- tm_map(corpus_clean, removePunctuation)  # 특수문자 제거
+corpus_clean <- tm_map(corpus_clean, stripWhitespace)  # 공백제거 
+```
+
+
+# 말뭉치 정리 확인
+```{r}
+inspect(sms_corpus[1:3])
+inspect(corpus_clean[1:3])
+```
+
+
+# 문서-용어 희소 매트릭스 생성
+```{r}
+sms_dtm <- DocumentTermMatrix(corpus_clean)
+sms_dtm
+```
+
+
+# 훈련과 테스트 데이터셋 생성
+```{r}
+# 원본
+sms_raw_train <- sms_raw[1:4169, ]
+sms_raw_test  <- sms_raw[4170:5559, ]
+
+# 정제(단어)
+sms_corpus_train <- corpus_clean[1:4169]
+sms_corpus_test  <- corpus_clean[4170:5559]
+
+# 행렬
+sms_dtm_train <- sms_dtm[1:4169, ]
+sms_dtm_test  <- sms_dtm[4170:5559, ]
+```
+
+
+# 스팸 비율 확인
+```{r}
+prop.table(table(sms_raw_train$type))
+prop.table(table(sms_raw_test$type))
+```
+
+
+# 단어 클라우드 시각화
+```{r}
+install.packages("wordcloud")
+library(wordcloud)
+
+install.packages("wordcloud2")
+library(wordcloud2)
+```
+
+```{r}
+wordcloud(sms_corpus_train, min.freq = 30, random.order = FALSE)
+```
+
+```{r}
+wordcloud2(inspect(sms_corpus_train))
+```
+
+
+# 훈련 데이터를 스팸과 햄으로 구분
+```{r}
+spam <- subset(sms_raw_train, type == "spam")
+ham  <- subset(sms_raw_train, type == "ham")
+```
+
+```{r}
+wordcloud(spam$text, max.words = 40, scale = c(3, 0.5))
+wordcloud(ham$text, max.words = 40, scale = c(3, 0.5))
+```
+
+
+# 빈번한 단어에 대한 속성 지시자
+```{r}
+# Find frequent terms in a document-term or term-document matrix.
+findFreqTerms(sms_dtm_train, 5)
+sms_dict <- findFreqTerms(sms_dtm_train, 5)
+sms_train <- DocumentTermMatrix(sms_corpus_train, list(dictionary = sms_dict))
+sms_test  <- DocumentTermMatrix(sms_corpus_test, list(dictionary = sms_dict))
+```
+
+
+
+# 개수를 팩터로 변환
+```{r}
+# 
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, 1, 0)
+  x <- factor(x, levels = c(0, 1), labels = c("No", "Yes"))
+}
+```
+```{r}
+sms_train <- apply(sms_train, MARGIN = 2, convert_counts)
+sms_test  <- apply(sms_test, MARGIN = 2, convert_counts)
+
+sms_train[3,]
+```
+
+
+
+## 3 단계 : 데이터로 모델 훈련
+```{r}
+library(e1071)
+sms_classifier <- naiveBayes(sms_train, sms_raw_train$type)
+sms_classifier
+```
+
+
+
+## 4 단계 : 모델 성능 평가 
+```{r}
+sms_test_pred <- predict(sms_classifier, sms_test)
+
+library(gmodels)
+CrossTable(sms_test_pred, sms_raw_test$type,
+           prop.chisq = FALSE, prop.t = FALSE, prop.r = FALSE,
+           dnn = c('predicted', 'actual'))
+```
+
+
+
+## 5 단계 : 모델 성능 향상
+```{r}
+sms_classifier2 <- naiveBayes(sms_train, sms_raw_train$type, laplace = .1)
+sms_test_pred2 <- predict(sms_classifier2, sms_test)
+CrossTable(sms_test_pred2, sms_raw_test$type,
+           prop.chisq = FALSE, prop.t = FALSE, prop.r = FALSE,
+           dnn = c('predicted', 'actual'))
+```
+
+
+
+
+

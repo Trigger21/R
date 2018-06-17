@@ -1,0 +1,398 @@
+R-20ÀÏÂ÷(2018.1.23)
+
+    20-1. regexpr
+    20-2. gregexpr
+    20-3. Shilla Hotel Review
+
+
+[¹®Á¦183] jeju.txt ÆÄÀÏ¿¡ ÀÖ´Â µ¥ÀÌÅÍ¸¦ R·Î ÀĞÀº ÈÄ ¸ğµç ¼ıÀÚµéÀÇ ºóµµ¼ö¸¦ È®ÀÎÇÏ¼¼¿ä.
+
+jeju <- readLines("c:/r/jeju.txt")
+jeju <- setdiff(jeju, '')
+jeju <- setdiff(jeju, " ")
+
+```{r}
+View(jeju)
+```
+
+```{r}
+library(KoNLP)
+useSejongDic()
+```
+
+```{r}
+library(stringr)
+```
+
+```{r}
+tx1 <- unlist(strsplit(jeju,'[^[:digit:]]'))
+tx1
+nchar(tx1)
+tx1 <- tx1[nchar(tx1) > 0]
+tx1 <- sort(as.numeric(tx1))
+```
+
+```{r}
+tx2 <- table(tx1)
+tx2
+```
+
+```{r}
+library(wordcloud2)
+wordcloud2(tx2)
+```
+
+
+```{r}
+library(colorspace)
+
+barplot(tx2, 
+        las = 2, cex.names = .7, col = heat_hcl(length(tx2)))
+```
+
+
+
+[¹®Á¦184] jeju.txt ÆÄÀÏ¿¡ ÀÖ´Â µ¥ÀÌÅÍ¸¦ R·Î ÀĞÀº ÈÄ ¸ğµç ¼ıÀÚµéÀÇ ¾Õ,µÚ¿¡ ¹®ÀÚ°¡ ÀÖ°Å³ª ¾ø´Â°æ¿ì ºóµµ¼ö¸¦ È®ÀÎÇÏ¼¼¿ä.
+
+ - ¹®ÀÚ°¡ ÀÖ´Â ¼ıÀÚ 
+```{r}
+ex_184 <- grep("[0-9]+", strsplit(jeju,'-'), value = T)
+
+tx_1 <- unlist(extractNoun(ex_184))
+
+tx_2 <- grep("([0-9][°¡-ÆR])+", tx_1, value = T)
+
+tx_2 <- strsplit(tx_2,"\"")
+
+tx_3 <- grep("[[:digit:]]", unlist(tx_2), value = T)
+
+tx_3
+```
+
+ - sol
+```{r}
+grep("°÷Á¤µµ°¡",tx_3,value = T)
+tx_3 <- gsub("ºÎÅÍ", "", tx_3)
+tx_3 <- gsub("°÷Á¤µµ°¡", "", tx_3)
+tx_3 <- gsub("±îÁö", "", tx_3)
+tx_3 <- gsub("±î", "", tx_3)
+tx_3 <- gsub("±îÁö", "", tx_3)
+```
+
+
+
+```{r}
+ex_184 <- strsplit(unlist(strsplit(jeju," ")), "[[:punct:]]")
+
+table(unlist(str_extract_all(ex_184, "\\w?\\d+\\w?")))
+```
+
+
+
+
+ - ¼±»ı´Ô Ç®ÀÌ(Áß¿ä) 
+ 
+```{r}
+table(unlist(str_extract_all(jeju,"\\d+")))
+```
+ 
+
+```{r}
+mydigits <- str_extract_all(jeju, "[[:digit:]]{1,}")
+table(unlist(mydigits))
+```
+
+
+```{r}
+table(unlist(str_extract_all(jeju, "\\w?\\d+\\w?")))
+```
+
+
+```{r}
+mydigits <- str_extract_all(jeju, '[[:alpha:]]{0,}[[:digit:]]{1,}[[:alpha:]]{0,}')
+table(unlist(mydigits))
+```
+
+
+
+```{r}
+mypunct <- str_extract_all(jeju, '[[:alpha:]]{0,}[[:punct:]]{1,}[[:alpha:]]{0,}')
+table(unlist(mypunct))
+```
+
+
+```{r}
+mystc <- str_extract_all(jeju, "[[:alpha:]]{0,}½À´Ï´Ù.")  # {0,} : 0¹ø ÀÌ»ó ¸ÅÄªÇÏ¸é Ã£´Â´Ù 
+table(unlist(mystc))
+```
+
+
+
+----------------------------------------------------------------------------------------------------------------
+
+# 20-1. regexpr
+
+    - ÁöÁ¤µÈ ÆĞÅÏ ¹®ÀÚ°¡ Ã³À½ ³ª¿À´Â À§Ä¡¸¦ ¹İÈ¯(¸®½ºÆ®Çü)ÇÏ´Â ÇÔ¼ö
+
+```{r}
+sentence <- 'r big data analysis for value creation'
+```
+
+
+```{r}
+regexpr('big', sentence)
+attr(regexpr('big',sentence), "match.length")
+```
+
+
+# 20-2. gregexpr
+
+    - ÁöÁ¤µÈ ÆĞÅÏÀÌ µîÀåÇÏ´Â ¸ğµç ÅØ½ºÆ® À§Ä¡¸¦ ¹İÈ¯ 
+
+```{r}
+regexpr('a', sentence)
+gregexpr('a', sentence)
+gregexpr('a', sentence)[[1]][5]
+```
+
+
+
+```{r}
+txt <- "abcdefABCDEF012345+!-ghizk°¡³ª´Ù¶ó¸¶¹Ù"
+```
+
+
+ - ¾ËÆÄºª¸¸ Ã£¾Æ¾ß ÇÒ ¶§
+ 
+```{r}
+g_alpha <- gregexpr('[A-z]', txt)
+g_alpha
+x <- unlist(strsplit(txt, character(0)))
+x[unlist(g_alpha)]
+
+
+
+unlist(str_extract_all(txt, "[A-z]"))
+grep("[A-z]",unlist(strsplit(txt, character(0))), value = T)
+```
+ 
+
+```{r}
+index <- g_alpha[[1]]
+index
+
+len <- length(index)
+len
+
+for(i in 1:len){
+  cat(substr(txt, index[i], index[i]))
+}
+```
+
+
+```{r}
+x <- unlist(str_extract_all(txt, "[A-z]"))
+r <- c()
+
+for(i in 1:length(x)){
+  r <- paste(r, x[i],sep="")
+}
+
+r
+```
+
+
+```{r}
+for(i in unlist(g_alpha)){
+  cat(substr(txt, i, i))
+}
+```
+
+
+ - ÇÑ±Û¸¸ »Ì¾Æº¸ÀÚ
+```{r}
+han <- gregexpr('[°¡-ÆR]', txt)
+
+for(i in unlist(han)){
+  cat(substr(txt, i, i))
+}
+
+regmatches(txt, han)
+regmatches(txt, han, invert = T)  # not
+```
+ 
+
+```{r}
+y <- unlist(strsplit(txt, character(0)))[unlist(han)]
+r <- c()
+
+for(i in 1:length(y)){
+  r <- paste(r, y[i], sep = "")
+}
+r
+```
+
+
+ -- \\p{Hangul}
+ 
+```{r}
+gregexpr("\\p{Hangul}", txt, perl = T)
+```
+
+
+
+
+
+
+\\d : Digit, 0,1,2,..9
+
+\\D : ¼ıÀÚ°¡ ¾Æ´Ñ °Í
+
+\\s : °ø¹é
+
+\\S : °ø¹éÀÌ ¾Æ´Ñ °Í
+
+\\w : ´Ü¾î
+
+\\W : ´Ü¾î°¡ ¾Æ´Ñ °Í
+
+\\t : Tab
+
+\\n : New Line(¿£ÅÍ¹®ÀÚ)
+
+^ : ½ÃÀÛµÇ´Â ¹®ÀÚ
+
+$ : ¸¶Áö¸· ±ÛÀÚ
+
+\ : excape Character(Å»Ãâ¹®ÀÚ)
+
+| : µÎ°³ÀÌ»óÀÇ Á¶°ÇÀ» µ¿½Ã¿¡ ÁöÁ¤
+
+[ab] : a ¶Ç´Â b
+
+[^ab] : a¿Í b¸¦ Á¦¿ÜÇÑ ¸ğµç ¹®ÀÚ
+
+[0-9] : ¸ğµç ¼ıÀÚ
+
+[A-Z] : ¿µ¾î ´ë¹®ÀÚ
+
+[a-z] : ¿µ¾î¼Ò¹®ÀÚ
+
+[A-z] : ¸ğµç ¿µ¹®ÀÚ(´ë¼Ò¹®ÀÚ ÀüºÎ)
+
+i+ : i°¡ ÃÖ¼Ò 1È¸´Â ³ª¿À´Â °æ¿ì
+
+i* : i°¡ ÃÖ¼Ò 0È¸ ÀÌ»ó ³ª¿À´Â °æ¿ì
+
+i? : i°¡ ÃÖ¼Ò 0È¸¿¡¼­ ÃÖ´ë 1È¸¸¸ ³ª¿À´Â °æ¿ì
+
+i{n} : i°¡ ¿¬¼ÓÀûÀ¸·Î nÈ¸ ³ª¿À´Â °æ¿ì
+
+i{n1,n2} : i°¡ n1¿¡¼­ n2È¸ ³ª¿À´Â °æ¿ì
+
+i{n,} : i°¡ nÈ¸ ÀÌ»ó ³ª¿À´Â °æ¿ì
+
+[:alnum:] : ¹®ÀÚ¿Í ¼ıÀÚ°¡ ³ª¿À´Â °æ¿ì; [:alpha:] and [:digit:]
+
+[:alpha:] : ¹®ÀÚ°¡ ³ª¿À´Â °æ¿ì; [:lower:] and [:upper:] (ÇÑ±Ûµµ ³ª¿È)
+
+[:blank:] : °ø¹éÀÌ ÀÖ´Â °æ¿ì
+
+[:cntrl:] : Á¦¾î ¹®ÀÚ°¡ ÀÖ´Â °æ¿ì(\n, \t)
+
+[:digit:] : Digits : 0 1 2 3 4 5 6 7 8 9
+
+[:graph:] : Graphical characters: [:alnum:] and [:punct:]
+
+[:lower:] : ¼Ò¹®ÀÚ°¡ ÀÖ´Â °æ¿ì
+
+[:print:] : ¼ıÀÚ, ¹®ÀÚ, Æ¯¼ö¹®ÀÚ, °ø¹é ¸ğµÎ
+
+[:punct:] : Æ¯¼ö¹®ÀÚ
+
+[:space:] : °ø¹é¹®ÀÚ
+
+[:upper:] : ´ë¹®ÀÚ°¡ ÀÖ´Â °æ¿ì
+
+[:xdigit:] : 16Áø¼ö°¡ ÀÖ´Â °æ¿ì : 0 1 2 3 4 5 6 7 8 9 A B C D E F a b c d e f
+
+
+
+--------------------------------------------------------------------------------------------------------
+
+
+# 20-3. Shilla Hotel Review
+
+```{r}
+shilla <- readLines("c:/r/Shilla_Hotel_Review.txt")
+shilla
+```
+
+
+```{r}
+jumsu <- str_extract_all(shilla, '(Á¡¼ö: )[0-9]')
+jumsu <- unlist(jumsu)
+num <- grep("[0-9]",unlist(strsplit(jumsu, " ")), value = T)
+num <- sort(num)
+table(num)
+
+sum(as.numeric(num))/length(as.numeric(num))
+```
+
+
+```{r}
+num_df <- as.data.frame(table(num))
+num_df
+
+for(i in 1:nrow(num_df)){
+  
+  num_df$pro[i] <- as.numeric(num_df$num)[i] * num_df$Freq[i]
+  
+}
+
+num_df
+```
+
+```{r}
+bp <- barplot(num_df$pro, names.arg = num_df$num,
+              main = "½Å¶óÈ£ÅÚ ¸®ºäÁ¡¼ö", 
+              ylim = c(0,350), col = rainbow_hcl(5), las = 1)
+text(x = bp, y = num_df$pro, label = paste(num_df$pro,"(",num_df$Freq,"Ç¥)",sep = ""), 
+     pos = 3, col = "blue")
+abline(h = mean(num_df$pro), lwd = 2, col = "red")
+```
+
+
+
+
+```{r}
+buildDictionary(ext_dic="sejong",
+                user_dic=data.frame(readLines("c:/r/Shilla_word.txt"),c("ncn")),replace_usr_dic=T)
+```
+
+```{r}
+shx1 <- setdiff(unlist(strsplit(shilla, "=")),"")
+shx2 <- SimplePos22(shx1)
+
+shx3 <- unlist(str_extract_all(shx2, '([A-z°¡-ÆR]+)/N'))
+shx4 <- unlist(strsplit(shx3, '/N'))
+
+
+grep("¸®ºä", shx4, value = T)
+shx4 <- gsub("¸®ºä",NA,shx4)
+
+shx4 <- shx4[nchar(shx4) > 1]
+
+```
+
+```{r}
+shx5 <- table(shx4)
+wordcloud2(shx5)
+```
+
+
+
+
+
+
+

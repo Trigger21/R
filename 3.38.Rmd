@@ -1,0 +1,873 @@
+---
+title: "R-38일차(2018.2.20)"
+---
+
+
+
+[문제236] IQ따른 시험 성적의 상관관계가 있는지를 파악하시고 130일때 시험 성적은?
+
+# 단순회귀분석
+```{r}
+score <- read.csv("c:/r/score.csv", header = T, stringsAsFactors = F)
+score
+```
+
+
+```{r}
+attach(score)
+```
+
+```{r}
+cor(IQ, 성적)  # 0.9102242 관련성 
+```
+
+```{r}
+scoreModel <- lm(성적 ~ IQ)
+predict(scoreModel, data.frame(IQ = 130))  # 81.98838
+```
+
+-> score 데이터에서 IQ와 성적은 양의 상관관계(약 0.91)이고 
+   IQ 130일 경우 예측되는 성적은 82이다.
+
+
+ - 그래프 그리기
+```{r}
+library(ggplot2)
+scoreRes <- predict(scoreModel, as.data.frame(IQ))
+ggplot(score)+
+  geom_point(aes(x = IQ, y = 성적))+
+  geom_line(aes(x = IQ, y = scoreRes, colour = "y=-5.2918+0.6714x"), size = 1)+
+  labs(title = "IQ에 따른 성적", colour = "회귀직선")
+```
+ 
+
+```{r}
+plot(IQ, 성적)
+abline(scoreModel, col = "blue")
+```
+ 
+ 
+--------------
+ 
+```{r}
+lm4 <- lm(성적~IQ+다니는학원수+게임하는시간+TV시청시간)
+coef(lm4)
+predict(lm4, data.frame(IQ = 135, 다니는학원수 = 5, 게임하는시간 = 1, TV시청시간 = 1))
+```
+ 
+* 두개념의 차이점
+
+# 상관분석(correlation) : 두 변수 사이의 관련성을 파악하는 방법
+    
+    - 1:1로만 비교를 하는 것
+    - 연속형 변수 : 연속형 변수
+
+# 회귀분석(regression) : 하나의 변수가 원인이 되어 다른 변수(들)에 영향을 미치는 관계
+
+    - 1:N로 비교를 하는 것  
+    - 원인과 결과분석이라고도 표현 
+    - 연속형 변수 : 연속형 변수
+
+# 공분산 : 두변수가 얼마나 함께 변화는지를 측정
+
+    - cov(IQ,성적)
+
+# 상관계수 : 두변수의 관계를 하나의 수치로 나타내는 값
+
+    - cov(IQ,성적) / sd(IQ)*sd(성적) = cor(IQ,성적)
+    - 범위는 -1 ≤ r ≤ 1
+    
+      0.7 ≤ r ≤ 1.0  : 매우 강한 양(+)의 상관관계
+      0.3 ≤ r < 0.7  : 강한 양(+)의 상관관계
+      0.1 ≤ r < 0.3  : 약한 양(+)의 상관관계
+     -0.1 < r < 0.1  : 상관관계 없음
+     -0.3 < r ≤ -0.1 : 약한 음(-)의 상관관계
+     -0.7 < r ≤ -0.3 : 강한 음(-)의 상관관계
+     -1.0 < r ≤ -0.7 : 매우 강한 음(-)의 상관관계
+    
+    
+보편적으로 질적변수 : 질적변수 -> 크로스 테이블
+
+
+
+[문제237] 의료 비용 예측 
+          보험회사는 이윤을 창출하기 위해 매년 보험료를 보험 가입자에게 지불하는 
+          금액보다 많이 모아야한다. 결과적으로 보험사는 정확하게 의료비를 예측하는 
+          모델을 만드는데 많은 시간과 자금을 투자 한다.
+
+## 1단게 : 데이터 수집
+
+    - 미국의 환자 의료비를 포함한 가상의 데이터셋 사용됨(insurance.csv)
+
+## 2단계 : 데이터 준비와 탐구
+```{r}
+insurance <- read.csv("c:/r/insurance.csv", stringsAsFactors = TRUE)
+str(insurance)
+```
+
+```{r}
+summary(insurance)
+```
+ 
+ - 독립변수
+ 
+# age : 주 수익자의 연령
+  
+    - 제 1순위 보험금 수령인의 나이를 나타내는 정수형 데이터
+      (64세 이상은 정부에서 보장하기 때문에 제외한다.)
+    
+# sex : 보험 계약자 성별, 여성(female), 남성(male)
+# bmi : 신체 용적 지수(body mass index), 키에 상대적으로 초과되거나 미달되는 몸무게에 대한 이해를 제공 
+#       신장과 체중의 비율을 사용한 체중의 객관적인 지수(kg/m^2), 이상적인 값은 18.5 ~ 24.9
+# children : 의료보험이 적용되는 자녀 수/ 부양가족수 
+# smoker : 흡연여부
+# region : 미국 내 수익자의 거주지역, 
+#          북동(northeast), 남동(southeast), 남서(southwest),북서(northwest)
+
+                         ↓
+                   
+# charges : 의료보험에 청구된 개인별 의료비
+
+
+```{r}
+attach(insurance)
+```
+
+```{r}
+mean(charges[insurance$sex == "female"])  # 12569.58
+sd(charges[insurance$sex == "female"])    # 11128.7
+
+mean(charges[insurance$sex == "male"])    # 13956.75
+sd(charges[insurance$sex == "male"])      # 12971.03
+```
+
+```{r}
+# 성별에 따른 보험료 결과 표준화 
+femaleZ <- scale(charges[insurance$sex == "female"])
+maleZ <- scale(charges[insurance$sex == "male"])
+class(femaleZ) # matrix
+```
+
+```{r}
+# female 표준정규분포표
+femaleY <- cbind(femaleZ, dnorm(femaleZ))
+femaleY <- as.data.frame(femaleY)
+names(femaleY) <- c("Z","Y")
+
+# male 표준정규분포표 
+maleY <- cbind(maleZ, dnorm(maleZ))
+maleY <- as.data.frame(maleY)
+
+# 그래프로 비교 
+library(ggplot2)
+ggplot(femaleY)+
+  geom_line(aes(Z,Y,col = "female"), lwd = 3, alpha = .5)+
+  geom_line(data = maleY,aes(V1,V2, col = "male"), lty = 2, lwd = 2)+
+  labs(colour = "범례")
+```
+
+-> 성별에 따른 보험료 차이는 없음 
+
+
+ - 상관관계 
+```{r}
+cor(insurance[c('age','bmi','children','charges')])
+```
+
+-> 나이가 많을 수록 높은 의료비가 예상된다(상관계수 : 0.29900819)
+
+
+# 산포도 매트릭스
+```{r}
+pairs(insurance[c('age', 'bmi', 'children', 'charges')])
+```
+
+-> age와 charges 간의 관계는 일부 상대적인 직선
+-> bmi와 charges 간의 관계는 두개의 구별되는 구룹
+-> 나머지 도식에서는 관련성을 보이는 흐름이 보이지 않음
+
+
+# 38-1. scatterplot 매트릭스
+
+    - 위의 산포도 매트릭스보다 향상된 기능 
+    
+```{r}
+install.packages("psych")
+library(psych)
+```
+
+
+
+               age       bmi   children    charges
+age      1.0000000 0.1092719 0.04246900 0.29900819
+bmi      0.1092719 1.0000000 0.01275890 0.19834097
+children 0.0424690 0.0127589 1.00000000 0.06799823
+charges  0.2990082 0.1983410 0.06799823 1.00000000
+
+-> 위 표를 시각화 
+```{r}
+pairs.panels(insurance[c('age', 'bmi', 'children', 'charges')])
+```
+
+-> 대각선 산포도는 히스토그램 
+-> 각 산포도에 그려진 동그라미들을 상관관계 타원(correlation ellipse)이라고 함.
+   원에 가까울 수록 관련성이 떨어지고 타원형에 가까울 수록 상관관계가 높다
+   (i.e. correlation value ∝ eccentricity, circle : 0, ellipse : (0,1))
+-> 수평선 관련성 떨어짐
+-> 수치 높은부분이 관련성 높음 
+
+∴ age ~ charges 
+
+```{r}
+pairs.panels(insurance[c('age', 'bmi', 'children', 'smoker', 'charges')])
+```
+
+
+## 3단계 : 데이터로 모델 훈련 
+
+# 다중회귀분석(Multiple regression analysis)
+```{r}
+lm(charges~age+children+bmi, data = insurance)
+```
+ 
+-> 자녀가 많을 수록 높은 의료비(병원진료, 예방접종, 매년신체검사)가 예상된다.
+
+    y = -6916.2 + 240x₁+542.9x₂+332.1x₃
+
+
+```{r}
+inModel <- lm(formula = charges~., data = insurance);inModel
+```
+
+    charges = -11938.5 + 256.9*20 + -131.3*1 + 339.2*100 + 475.5*0 + smokeryes*0+...
+
+-> 흡연자는 비흡연자보다 23848.5 만큼 의료비를 더 지급한다.
+-> 위처럼 가능한 이유는 문자를 factor형으로 했기때문 
+
+※ lm()의 새로운 특징 발견!!
+
+    - 더미 코딩(dummy coding) 기법을 모델의 팩터 타입 변수에 자동으로 적용을 한다.
+    
+    - 더미 코딩이란?
+      : 명목 특징을 수치로 취급하기 위해 특징 범주별로 더미 변수(dummy variable) 
+        라고 하는 이진 변수를 생성한다. 더미 변수는 관측이 명시된 범주에 속하면 1로,
+        그렇지 않으면 0으로 생성한다. 예를 들어 sex 특징은 male, female이라는 두 개의
+        범주를 갖는다. 
+        ex) sex 특징은 두 개의 이진 변수로 분리되는데, R은 sexmale, sexfemale
+            로 이름 짓는다. sex=male인 관측은 sexmale=1 이고 sexfemale=0 이다.
+        세 개 이상의 범주를 갖는 변수에도 동일한 코딩을 적용한다. 예를 들어 R은 4 범주
+        특징 region을 regionnorthwest, regionsoutheast, regionsouthwest, regionnortheast
+        라는 네 개의 더미 변수로 분리한다.
+        
+     - 참조 변수(reference category) 
+       : 회귀 모델에 더미 변수를 추가할 때 범주 중 하나로 참조용으로 사용하려고 남겨둔다. 
+         ex) sexfemale, smokerno, regionnortheast 변수를 자동으로 추출해 북동지역 여성 
+             비흡연자를 참조 그룹으로 만든다. 따라서 남성은 여성에 비해 매년 의료비가 
+             $161.1 적고, 흡연자는 비흡연자보다 매년 평균 $23847.2의 비용이 더 든다.
+             북동 지역의 평균비용이 나머지 세개 지역보다 평균비용이 가장 높은 경향이 있음
+             을 의미함.
+   
+Q. 그러면 R은 어떤 기준으로 변수들을 구별해서 참조변수를 만들어 낸 것인가?
+
+A. R은 default로 factor 첫 번째 level들로 참조변수를 만든다. 아래 결과를 보라!
+   만약에 다른 level로 지정하고 싶다면 relevel() 함수를 사용하자.
+```{r}
+levels(insurance$sex)
+levels(insurance$smoker)
+levels(insurance$region)
+```
+
+relevel() ex       
+```{r}
+?relevel
+sex <- insurance$sex
+levels(sex)
+
+sex <- relevel(sex, ref = "male")
+levels(sex)
+```
+        
+
+## 4단계: 모델 성능평가
+
+```{r}
+summary(inModel)
+```
+1) Residuals:
+
+    - 예측에서 오차에 대한 요약통계를 제공한다. 일부는 상당히 차이가 있다.
+      잔차는 실제값에서 예측값을 뺀 값이다. 29992.8의 최대오차는 모델이 최소
+      하나의 예제에 대해 거의 30,000달러 예측값 차이가 있다. 한편 50% 오차는 
+      1Q, 3Q 값 사이에 있다. 그래서 예측의 대다수는 실제값이 2,850달러 이상이고
+      1,400달러 이하다.
+      
+2) 별표(*)
+   
+    - 모델에서 각 속성의 예측력을 나타낸다. 중요한 레벨(Signif. codes)은 
+      측정값을 고려해서 얼마나 실제계수가 0일지를 측정해 제공한다. 별 3개 
+      표시는 종속변수와 관계없는 속성을 의미하는 0이므로 중요한 레벨을 나타낸다.
+      일반적인 실례는 통계적 주요한 변수를 나타내기 위해 0.05레벨을 사용한다.
+      모델이 통계적으로 주요한 일부 속성만 가진다면 고민이 될 수 있다.
+      (일부 속성만 결과에 영향을 미치기 때문) 모델은 주요한 변수를 갖고 있고
+      논리적인 방법으로 결과와 관련돼 있어 보인다.
+      
+    - Pr(>|t|)로 표시된 p-value은 추정된 계수가 실제 0일 확률 추정치다. p-value가
+      작은 경우 실제 계수가 0이 아닐 가능성이 높다는 것을 말하며, 특징이 종속변수와
+      관계가 없을 가능성이 아주 낮다는 것을 의미한다. 일부 p-value에는 별(***)이 있는데
+      추정치로 충족되는 유의수준(significance level)을 나타내는 각주에 해당한다. 
+      유의수준은 모델을 구축하기 전에 선정되는 임계치로 우연에 의한 발견이 아닌
+      실제발견을 나타내는데 사용될 수 있다. 따라서 유의수준보다 낮은 p-value은
+      통계적으로 유의한(statistically significant) 것으로 간주된다. 모델에 통계적으로
+      유의한 항이 적다면 사용되는 특징이 결과를 잘 예측하지 못한다는 것이므로 유려할
+      만한 이유가 된다. 여기서 이 모델은 매우 유의한 변수를 몇 개 가지면, 이 변수들이
+      논리적인 방식으로 결과와 연관된 것으로 보인다.
+      
+3) Multiple R-squared:(결정계수 coefficient of determination)
+
+    - 종속변수의 값에 대해 전체적인 설명으로 모델의 측정을 제공한다.
+      상관관계 계수와 유사하게 값이 1.0에 가까우면 가까울수록 모델은
+      데이터를 완전하게 설명한다. R-squared:  0.7494 이기 때문에 모델이
+      설명하는 종속변수는 75% 임을 알 수 있다. 좀 더 많은 속성을 가진
+      모델은 좀 더 변화를 설명한다. Adjusted R-squared 값은 다수의 독립
+      변수모델에 불이익을 줘서 R-squared를 수정한다. 이는 설명 변수의
+      개수가 다른 여러모델의 성능을 비교할 때 유용하다.
+      
+결론 : 모델은 잘 작동하고 있으며, 실 데이터에 대한 회귀모델은 일반적으로
+       Adjusted R-squared가 매우 낮다. 따라서 0.75면 좋은편에 속한다.
+       오차의 일부 크기가 조금 우려되지만, 의료비 데이터의 본질을 생각하면
+       놀랄 일도 아니다. 하지만 모델을 약간 다른 방식으로 지정하면 모델의
+       성능을 향상시킬 수 있다.
+
+
+```{r}
+predict(inModel, data.frame(age = 40, sex = "male", bmi = 20, children = 2, smoker = 'yes', region = "northwest"))
+```
+
+
+## 5단계: 모델 성능 개선
+
+# 1. 비선형 관계 추가
+
+      y = α + β₁x + β₂X²
+
+```{r}
+insurance$age2 <- insurance$age^2
+lm(charges~., data = insurance)
+```
+
+# 2. 수치변수를 이진 지시 변수로 변환   
+
+    - 특징의 영향이 누적되지 않고 특정한 임계치에 도달한 후에만 영향을 갖는다고
+      가정해보자. 예를 들어 체중이 정상범위인 사람에게는 BMI가 의료비에 미치는 영향
+      이 없지만, 비만인 사람(BMI 30이상)에게는 BMI가 높은 의료비와 강하게 연관돼있다.
+
+```{r}
+insurance$bmi30 <- ifelse(insurance$bmi >= 30, 1, 0)
+```
+      
+      이진 특징에 의해 추정된 베타는 BMI가 30 미만인 사람들에 대해 상대적으로 BMI 30
+      이상인 사람들의 의료비에 대한 평균 순 영향을 나타낸다.
+      
+# 3. 상호작용 영향 추가
+
+Q. 비만인 사람이 흡연까지 했을 때 좀 더 높은 패널티를 부여하려면 
+   즉, 보험료를 인상시킬려면 어떻게 모델을 만들어야 하는가?
+
+A. 두 변수의 상호작용 여부를 알아보기 위한 테스트를 진행한다. 
+    
+    - * 연산자
+    - : 연산자(위의 확장형식)
+    
+```{r}
+ins_model2 <- lm(charges ~ bmi30*smoker, data = insurance)
+ins_model3 <- lm(charges ~ bmi30:smoker, data = insurance)
+ins_model2
+ins_model3
+ins_model4 <- lm(charges ~ bmi30:age, data = insurance)
+```
+   
+```{r}
+predict(ins_model3, data.frame(bmi30 = 1, smoker = 'yes'))
+predict(ins_model3, data.frame(bmi30 = 1, smoker = 'no'))
+predict(ins_model4, data.frame(bmi30 = 1, age = 0))
+predict(ins_model4, data.frame(bmi30 = 1, age = 1))
+```
+
+# 1+2+3. 최종 
+
+```{r}
+ins_modelNew <- lm(charges ~ age+age2+children+bmi+sex+bmi30*smoker+region, data = insurance)
+ins_modelNew
+```
+
+```{r}
+summary(ins_modelNew)
+```
+
+{개선사항}
+
+Multiple R-squared:  0.7509 -> 0.8664
+Adjusted R-squared:  0.7494 -> 0.8653
+
+개선된 모델은 의료비 변화량의 87%를 설명한다.
+
+흡연하는 것만으로도 이 모양($13404)인데 거기다 비만까지 되면($19810) 죽음이다. 
+즉, 흡연이 비만과 관련된 질병을 악화시키는 것!
+
+
+---------------------------------
+
+
+[문제238] whitewine 품질 결정
+
+
+
+## 단계 1: 데이터 수집
+
+## 단계 2: 데이터 준비
+```{r}
+wine <- read.csv("c:/r/whitewines.csv")
+wine
+```
+
+# 와인 데이터 확인
+```{r}
+str(wine)  # 'data.frame':	4898 obs. of  12 variables:
+names(wine)
+```
+
+    - fixed.acidity       : 고정 산도
+    - volatile.acidity    : 휘발성 산도
+       : 와인에게 있어서 휘발성 산은 사람의 체온과 비슷하다. 현재의 상태를 알려주기 때문이다. 
+         적당한 양의 휘발성산은 와인 향에 필수적이지만, 너무 많으면 문제가 있다는 것을 알려주는 
+         신호이다.(마치 사람들의 고열처럼) 휘발성 산을 구성하는 것은 여러 가지가 있지만 가장 많이 
+         차지하는 것은, acetic acid이다. acetic acid는 와인이 산화되었을 때 생긴다. 따라서 휘발성 
+         산이 너무 많을 경우, 날카롭고, 식초처럼 톡 쏘는 향이 날 경우, 와인이 상한 징조로 볼 수 있다.
+         0.05%이하면 와인의 질에 아무런 영향을 주지 못한다.
+    - citric.acid         : 시트르산
+    - residual.sugar      : 잔류 설탕
+    - chlorides           : 염화물
+    - free.sulfur.dioxide : 자유 이산화황
+    - total.sulfur.dioxide: 총 이산화황
+    - density             : 밀도
+    - pH                  : pH
+    - sulphates           : 황산염
+    - alcohol             : 알코올
+    - quality             : 품질
+
+# 품질 등급 분포(0(매우나쁨) ~ 10(아주좋음))
+```{r}
+hist(wine$quality)
+```
+-> 중간등급(보통)을 기준으로 분포도가 고르게 퍼져있다.
+
+# 와인 데이터의 요약 통계
+```{r}
+summary(wine)
+```
+
+
+# 훈련데이터 75% 테스트데이터 25%
+```{r}
+nrow(wine)*0.75  # 3673.5
+(nrow(wine)-3673.5)*100/nrow(wine) # 25%
+```
+
+```{r}
+wine_train <- wine[1:3673, ]
+wine_test <- wine[3674:4898, ]
+```
+
+
+## 3 단계 : 데이터에 대한 모델 훈련 
+# rpart를 활용한 회귀트리 
+# rpart(종속변수 ~ 독립변수, data = 종속변수, 독립변수가 있는 데이터프레임)
+```{r}
+library(rpart)
+m <- rpart(quality ~ ., data = wine_train)
+m # wine_train 데이터를 바탕으로 quality에 대한 회귀트리모델 생성
+```
+
+
+# 트리에 대한 기본 정보
+m
+
+# 트리에 대한 세부 정보
+```{r}
+summary(m)
+```
+
+
+# 시각화 하기 위해 rpart.plot 패키지 사용
+```{r}
+library(rpart.plot)
+```
+
+
+# 기본 결정 트리 다이어그램
+```{r}
+rpart.plot(m, digits = 3)
+```
+
+
+# 일부 조정 다이어그램
+```{r}
+rpart.plot(m, digits = 4, fallen.leaves = TRUE, type = 3, extra = 101)
+```
+
+
+
+## 4단계 : 모델 성능 평가
+
+# 테스트 데이터셋에 대해 예측치 생성
+```{r}
+p.rpart <- predict(m, wine_test)
+p.rpart
+```
+
+
+# 실제값과 예측값의 분포 비교
+
+ - 실제값
+```{r}
+summary(wine_test$quality)
+```
+
+ - 예측값 
+```{r}
+summary(p.rpart)
+```
+
+-> 예측값은 실제값의 이상치값(min, max)을 제외한 나머지 분위수가 근소한 차이이내로 일치된다.
+
+
+# 상관 관계 비교
+```{r}
+cor(p.rpart, wine_test$quality)  # 0.5358789 : 강한 양(+)의 상관관계
+```
+
+
+# 평균 절대 오차(mean absolute error)를 계산하는 함수
+```{r}
+MAE <- function(actual, predicted) {
+  mean(abs(actual - predicted))  
+}
+```
+
+-> 실제값과 예측값 사이의 오차(>0)들의 평균을 구하는 것
+
+
+# 예측값과 실제값간의 평균 절대 오차
+```{r}
+MAE(p.rpart, wine_test$quality)
+```
+
+
+# train data set 평균값과 test data set label 간의 평균 절대 오차
+```{r}
+mean(wine$quality)  # 실제값 라벨(quality) 평균
+MAE(5.87, wine_test$quality)  
+```
+
+
+{redwine 응용}
+
+step.1
+
+# redwine data set
+```{r}
+redwine <- read.csv("c:/r/redwines.csv")
+redwine
+```
+
+-> redwine 평가요소(컬럼)은 whitewine과 동일하므로 세부설명 생략
+
+```{r}
+attach(redwine) # 편리성 확보
+```
+
+# quality 분포
+```{r}
+hist(quality)
+```
+
+-> 중간등급(보통)을 기준으로 분포도가 고르게 퍼져있다.
+
+
+# 데이터 통계값 요약
+```{r}
+summary(redwine)
+```
+
+step.2
+
+# 훈련데이터 75%, 테스트데이터 25%(sample로 무작위 추출)
+```{r}
+nrow(redwine) # 1599
+nrow(redwine) * 0.75  # 1199
+N <- sample(1:1599,1199)
+N
+redTrain <- redwine[N,]
+redTest <- redwine[setdiff(1:1599,N),]
+```
+
+ - 실행여부 검토
+```{r}
+str(redTrain) # 1199 obs. of  12 variables:
+str(redTest)  # 400 obs. of  12 variables:
+```
+
+ - 훈련 및 테스트 데이터 라벨값 분포정도 확인
+```{r}
+hist(redTrain$quality)
+hist(redTest$quality)
+```
+
+
+step.3
+
+# 회귀트리 모델 생성
+```{r}
+library(rpart)
+redModel <- rpart(quality~., data = redTrain)
+summary(redModel)
+```
+
+> Variable importance
+             alcohol            sulphates              density     volatile.acidity 
+                  33                   20                   13                   10 
+       fixed.acidity          citric.acid            chlorides total.sulfur.dioxide 
+                   6                    5                    4                    4 
+                  pH  free.sulfur.dioxide       residual.sugar 
+                   3                    1                    1 
+
+
+# 모델 시각화
+```{r}
+library(rpart.plot)  # Enhanced tree plots
+rpart.plot(redModel, digits = 3)
+```
+
+```{r}
+library(rattle)				  # Fancy tree plot
+library(RColorBrewer)   # color 
+fancyRpartPlot(redModel, digits = 3, type = 1, cex = .7, palettes = "PuRd")
+```
+
+
+step.4
+
+# 테스트에 적용
+```{r}
+testRes <- predict(redModel, redTest)
+cor(testRes, redTest$quality)  # 0.597799 : 강한 양(+)의 상관관계(white : 0.5358789)
+```
+
+# 분위수 비교 
+```{r}
+summary(redTrain$quality)
+summary(redTest$quality)
+summary(testRes)
+```
+
+# 평균절대오차 비교
+```{r}
+MAE <- function(actual, predicted) {
+  mean(abs(actual - predicted))  
+}
+
+MAE(testRes, redTest$quality)  # 0.489012
+MAE(median(redTrain$quality), redTest$quality)
+MAE(mean(redTrain$quality), redTest$quality)
+MAE(mean(redTrain$quality), redTest$quality)
+```
+
+-> 예측값과 테스트 라벨의 평균절대오차가 상대적으로 매우 근접함을 보인다.
+
+
+
+ #   [ Modeling 3 : randomforest ]  **가장 정확도가 높음**
+  library(randomForest)
+  
+  m<-randomForest(quality~., Wine)
+  m$importance
+
+  varImpPlot(m)
+  plot(m)
+  
+  p.rf<-predict(m, test[-12])
+  pred4<-round(p.rf)
+  
+  table(pred4)
+  confusionMatrix(pred4, test$quality)
+
+
+
+-----------------------------
+{wine 추가 연구}
+
+# 회귀분석 모델 생성(train data set)
+```{r}
+modelTrain <- lm(quality~., data = wine_train)
+summary(modelTrain)
+```
+Estimate : 계수추정값
+Std. Error : 표준에러
+t value : 
+Pr(>|t|) : 
+*** : 제일 좋은 거 
+
+```{r}
+preTest <- predict(modelTrain, wine_test)
+cor(preTest, wine_test[12]) # 0.5670684
+
+# mean absolute error function
+MAE <- function(actual, predicted) {
+  mean(abs(actual - predicted))  
+}
+
+MAE(wine_test[,12],preTest)  # 0.5737315
+MAE(wine_test[,12],mean(wine_train[,12]))  # 0.6737385
+```
+
+
+# 위 결과를 향상시켜보자
+```{r}
+# 관련성 높은 항목(***)만 보자
+
+modelTrainNew <- lm(quality~volatile.acidity, data = wine_train)
+summary(modelTrainNew)
+```
+
+```{r}
+confint(modelTrainNew) # 회귀계수의 95% 신뢰구간
+preTestNew <- predict(modelTrainNew, wine_test)
+cor(preTestNew, wine_test[12])
+MAE(preTestNew, wine_test[,12])
+MAE(wine_test[,12],mean(wine_train[,12]))
+```
+
+
+```{r}
+par(mfrow = c(2,2))
+plot(modelTrainNew)
+```
+
+첫번째 플롯은 잔차 플롯으로, dist의 적합값과 잔차를 그린 플롯이다. 
+잔차의 등분산성과 독립성을 검정하기 위한 플롯이다.
+
+두번째 플롯은 정규 플롯으로, 잔차의 정규성을 검정하기 위한 플롯이다.
+
+세번째 플롯은 표준화 잔차 플롯으로, 잔차플롯과 비슷하다.
+
+네번째 플롯은 지레-잔차 플롯으로, X값과 Y값의 특이값을 찾아내는데 유용한 플롯이다.
+
+plot()은 generic function이 인자로 선형 회귀 모델을 주면 plot.lm()이 자동으로 호출된다. 
+plot.lm()이 그리는 차트는 위의 4가지 외에도 2가지가 더있다.
+
+```{r}
+par(mfrow = c(1, 2))
+plot(modelTrainNew, which = c(4, 6))
+```
+첫번째 플롯은 관찰값별 Cook's Distance(Cook의 거리)를 구한 것으로, 이상치를 판별하는데 사용된다.
+두번째 플롯은 Cook의 거리와 지레값을 플롯한 것으로, X공간과 Y공간의 이상치를 동시에 판별하는데 사용된다.
+
+
+# 와인품질 검사를 의뢰받았다 
+
+```{r}
+# 전체 데이터 바탕으로 모델생성
+m1 <- rpart(quality~.,data = wine)
+
+# 결정트리 육안확인 
+rpart.plot(m1, digits = 3)
+```
+
+ - 정보획득량 
+```{r}
+library(FSelector)
+library(doBy)
+
+# 엔트로피 높은 순 으로 정렬(결정트리 구분 순서)
+orderBy(~-attr_importance, information.gain(quality~.,wine))
+```
+
+```{r}
+library(rattle)				  # Fancy tree plot
+library(rpart.plot)			# Enhanced tree plots
+library(RColorBrewer)   # color 
+fancyRpartPlot(m1, digits = 3, type = 1, palettes = "YlOrBr")
+```
+
+
+```{r}
+str(wine)
+test <- wine[sample(10),]
+res <- predict(m1, test)
+```
+
+
+```{r}
+summary(test[,12])
+summary(res)
+cor(res, test[12])  # 0.7963906 : 매우 강한 양(+)의 상관관계
+```
+
+
+# 회귀분석으로 해본다면?
+```{r}
+names(wine)
+```
+
+```{r}
+cor(wine)
+```
+
+```{r}
+m3 <- lm(quality~., data = wine)
+m3
+res1 <- predict(m3, test)
+res1
+cor(res1, test[12]) 
+```
+
+Call:
+lm(formula = quality ~ ., data = wine)
+
+Coefficients:
+         (Intercept)         fixed.acidity      volatile.acidity           citric.acid  
+           1.502e+02             6.552e-02            -1.863e+00             2.209e-02  
+      residual.sugar             chlorides   free.sulfur.dioxide  total.sulfur.dioxide  
+           8.148e-02            -2.473e-01             3.733e-03            -2.857e-04  
+             density                    pH             sulphates               alcohol  
+          -1.503e+02             6.863e-01             6.315e-01             1.935e-01  
+
+* 상관계수
+quality~fixed.acidity : -0.417434
+                   quality~volatile.acidity : 0.5172917
+quality~citric.acid : -0.5796099
+quality~residual.sugar : -0.3054133
+quality~chlorides : 0.1233739
+                   quality~free.sulfur.dioxide : 0.7553876
+quality~total.sulfur.dioxide : -0.5930021
+quality~density : -0.05788868
+quality~pH : -0.4385926
+quality~sulphates : -0.3139259
+quality~alcohol : 0.2210752
+
+
+```{r}
+library(ggplot2)
+ggplot(test)+
+  geom_point(aes(x=residual.sugar,y=quality))+
+  geom_line(aes(x=residual.sugar,y=res1))
+```
+
+
+```{r}
+cor(wine) - diag(diag(cor(wine)))
+```
+
+
+
+

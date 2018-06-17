@@ -1,0 +1,150 @@
+## R-36일차(2018.2.14)
+
+  # 36-1. fviz_cluster()
+  # 36-2. Voronoi Diagram 
+
+
+#[문제229] 영어와 수학점수로 크게 4개의 그룹의 학생집합으로 분류하세요
+
+academy <- read.csv("c:/r/academy.csv", header = T)
+ac <- academy[,c(3,4)]
+ac
+
+library(stats)  # kmeans()
+ac_km <- kmeans(ac, 4)
+ac_km
+
+#그래프로 표현
+
+## 36-1. fviz_cluster()
+install.packages("factoextra")
+library(factoextra)
+?fviz_cluster
+
+fviz_cluster(ac_km, data = ac, stand = F, ellipse.type = "t")
+stad = F(x,y축 실제값), T(확률값) 으로 보이게
+Voronoi Diagram(참조 : https://en.wikipedia.org/wiki/Voronoi_diagram)
+
+## 36-2. Voronoi Diagram
+install.packages("tripack")
+library(tripack)
+library(RColorBrewer)
+
+color <- brewer.pal(4, "Pastel1")
+academy_V <- voronoi.mosaic(ac_km$centers[,1], ac_km$centers[,2])
+academy_P <- voronoi.polygons(academy_V)
+
+plot(ac, pch = 19, col = color[ac_km$cluster])  # 학생들의 수학, 영어 성적 
+points(ac_km$centers[,1], ac_km$centers[,2], pch = 3, cex = 1.5, lwd=2)  # kmeans
+plot(academy_V, add = T)  # 
+#※ 군집분석 끝판왕 (https://rpubs.com/cardiomoon/249084)
+
+# ggplot 활용
+library(ggplot2)
+library(cluster)
+
+install.packages("fMultivar")
+library(fMultivar)
+
+set.seed(1234)
+
+df <- rnorm2d(1000,rho=.5)
+df <- as.data.frame(df)
+plot(df)
+
+fit <-pam(df,k=2)
+df$clustering <- factor(fit$clustering)
+ggplot(data=df, aes(x=V1,y=V2,color=clustering, shape=clustering))+
+  geom_point() + ggtitle("Clustering of Bivariate Normal Data")
+
+#선생님 풀이
+academy <- read.csv("c:/r/academy.csv", header=T, stringsAsFactors=F )
+academy2 <- academy[ , c(3,4)] 
+academy2
+plot(academy2)
+
+#install.packages("factoextra")
+#library(factoextra)
+
+km <- kmeans(academy2, 4)
+
+fviz_cluster(km, data = academy2,
+             stand=F,
+             ellipse.type = "t")
+
+
+#install.packages("tripack")
+
+#library(tripack)
+#library(RColorBrewer)
+
+color <- brewer.pal(4, "Pastel1")
+academy_V <- voronoi.mosaic(km$centers[,1], km$centers[,2])
+academy_P <- voronoi.polygons(academy_V)
+
+plot(academy2, pch = 19, col = color[km$cluster])
+points(km$centers[,1], km$centers[,2], pch =3, cex = 1.5, lwd=2)
+plot(academy_V, add = T)
+
+p <- matrix(c(17, 42, 85, 70, 19, 53, 26, 84, 84, 46, 48, 85, 4, 95, 48, 54, 66, 74, 50, 48, 
+              28, 73, 38, 56, 43, 29, 63, 22, 46, 45, 7, 60, 46, 34, 14, 51, 70, 31, 39, 26), ncol=2)
+
+v <- voronoi(p)
+v
+
+install.packages("deldir")
+library(deldir)
+
+x <- 1000*runif(10)
+y <- 1000*runif(10)
+vt <- deldir(x, y)
+
+png("tessellation.png")
+par(mar=rep(1, 4))
+plot(x, y, axes=FALSE, ann=FALSE, pch=16)
+plot(vt, wlines="tess", lty="solid", add=TRUE)
+box()
+dev.off()
+
+#Let's generate some fake data
+set.seed(105)
+long<-rnorm(20,-98,15)
+lat<-rnorm(20,39,10)
+df <- data.frame(lat,long)
+
+library(deldir)
+library(ggplot2)
+
+#This creates the voronoi line segments
+voronoi <- deldir(df$long, df$lat)
+
+#Now we can make a plot
+ggplot(data=df, aes(x=long,y=lat)) +
+  #Plot the voronoi lines
+  geom_segment(
+    aes(x = x1, y = y1, xend = x2, yend = y2),
+    size = 2,
+    data = voronoi$dirsgs,
+    linetype = 1,
+    color= "#FFB958") + 
+  #Plot the points
+  geom_point(
+    fill=rgb(70,130,180,255,maxColorValue=255),
+    pch=21,
+    size = 4,
+    color="#333333")
+#(Optional) Specify a theme to use
+ltd_theme
+(4718-3996)/(88-50)
+(5801-5478)/(145-128)
+(6808-5801)/(198-145)
+
+# (A-4718)/(100-88) = 19
+# A = 19*(100-88)+4718
+19*(100-88)+4718
+
+# (8499-B)/(287-230) = 19
+# B = (-1)*19*(287-230)+8499
+(-1)*19*(287-230)+8499
+
+19*50+3996

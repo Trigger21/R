@@ -1,0 +1,266 @@
+---
+title: 'R-21ÀÏÂ÷(2018-1-24)'
+---
+
+    21-1. ½Ã±º±¸º° ÀÌµ¿ÇöÈ²
+    21-2. seoul trip
+
+# 21-1. ½Ã±º±¸º° ÀÌµ¿ÇöÈ²
+
+```{r}
+move <- read.csv("c:/r/½Ã±º±¸º°_ÀÌµ¿ÀÚ¼ö.csv", header = T, stringsAsFactors = F)
+```
+
+```{r}
+move
+```
+
+
+
+```{r}
+mo1 <- move[,c("ÇàÁ¤±¸¿ª.½Ã±º±¸.º°",
+        "X2017..09","X2017..09.1","X2017..09.2",
+        "X2017..10","X2017..10.1","X2017..10.2",
+        "X2017..11","X2017..11.1","X2017..11.2")]
+mo1
+```
+
+
+```{r}
+mo2 <- mo1[,c(1,4,7,10)]
+mo2 <- mo2[-1,]
+names(mo2) <- c("ÇàÁ¤±¸¿ª", "¼øÀÌµ¿(9¿ù)", "¼øÀÌµ¿(10¿ù)","¼øÀÌµ¿(11¿ù)")
+mo2$`¼øÀÌµ¿(9¿ù)` <- as.numeric(mo2$`¼øÀÌµ¿(9¿ù)`)
+mo2$`¼øÀÌµ¿(10¿ù)` <- as.numeric(mo2$`¼øÀÌµ¿(10¿ù)`)
+mo2$`¼øÀÌµ¿(11¿ù)` <- as.numeric(mo2$`¼øÀÌµ¿(11¿ù)`)
+mo3 <- melt(mo2)
+mo3
+```
+
+
+```{r}
+barplot(mo3$value, names.arg = mo3$ÇàÁ¤±¸¿ª, las = 2)
+```
+
+```{r}
+mo2$avs <- rowMeans(mo2[,-1])
+mo2
+```
+
+
+```{r}
+barplot(mo2$avs[-1], names.arg = mo2$ÇàÁ¤±¸¿ª[-1], las = 2)
+```
+
+
+--------------------------------------------------------------------------------------------------------
+
+
+```{r}
+pop <- read.csv("c:/r/ÀÎ±¸(2016).csv", header = T, stringsAsFactors = F)
+pop <- pop[-(1:5),]
+names(pop) <- c("loc","cnt")
+pop  # ½Ã,µµº° ÀÎ±¸¼ö 
+```
+
+
+```{r}
+library(ggmap)
+
+# test 
+geocode("south korea")
+map <- qmap("south korea", zoom = 7, maptype = "roadmap")
+map
+```
+
+```{r}
+library(ggplot2)
+loc_df <- geocode(location = enc2utf8(as.character(pop$loc)))
+loc_df           
+
+pop$lon <- loc_df$lon
+pop$lat <- loc_df$lat
+
+pop$cnt <- as.numeric(as.character(pop$cnt))
+
+library(doBy)
+orderBy(~-cnt, pop) 
+```
+
+
+```{r}
+
+colMeans(loc_df)
+
+m <- get_map(location = colMeans(loc_df), zoom = 7,maptype = "roadmap", source = "google", color = "bw")
+ggmap(m)
+
+ggmap(m)+
+  geom_point(data = pop, aes(x = lon, y = lat, size = cnt, colour = loc))
+
+```
+
+
+
+
+```{r}
+install.packages('maps')
+library('maps')
+```
+
+
+```{r}
+md <- map_data(region = pop$loc)
+```
+
+
+-----------------------------------------------------------------------------------------------------------
+
+# 21-2. seoul trip
+
+```{r}
+seoul_trip <- readLines("c:/r/seoul_trip.txt")
+seoul_trip
+```
+
+
+```{r}
+library(KoNLP)
+
+buildDictionary(ext_dic="sejong",
+                user_dic=data.frame(readLines("c:/r/seoul_trip_plc.txt"),c("ncn")),replace_usr_dic=T)
+
+stxt1 <- SimplePos09(seoul_trip)
+```
+
+
+```{r}
+library(stringr)
+strx2 <- str_extract_all(stxt1, '([°¡-ÆR]+)/N')
+strx2 <- unlist(strx2)
+strx2
+
+strx3 <- unlist(strsplit(strx2, "/N"))
+strx3
+```
+
+```{r}
+grep("^¼­¿ï$",strx3,value = T)
+strx3[strx3 == "¼­¿ï"] <- NA
+
+strx3[strx3 == "¸í¼Ò"] <- NA
+strx3[strx3 == "¼­¿ï¾ß°æ¸í¼Ò³«»ê°ø¿ø"] <- "³«»ê°ø"
+strx3[strx3 == "³«»ê°ø"] <- "³«»ê°ø¿ø"
+
+grep("¼­¿ï", strx3, value = T)
+
+strx3 <- gsub(grep("¸í¼Ò",strx3,value = T),"",strx3)
+
+grep("µ¥ÀÌÆ®", strx3, value = T)
+strx3 <- gsub(grep("µ¥ÀÌÆ®", strx3, value = T),NA,strx3)
+
+grep("ÀüÀï±â³ä$", strx3 ,value = T)
+strx3 <- gsub(grep("ÀüÀï±â³ä$", strx3 ,value = T), "ÀüÀï±â³ä°ü", strx3)
+
+grep("ÀÀºÀ$", strx3, value = T)
+strx3[strx3 == "ÀÀºÀ"] <- NA
+
+grep("±¹¸³Áß¾Ó", strx3, value = T)
+strx3[strx3 == "±¹¸³Áß¾Ó"] <- "±¹¸³Áß¾Ó¹Ú¹°°ü"
+strx3[strx3 == "±¹¸³Áß¾Ó¹Ú"] <- "±¹¸³Áß¾Ó¹Ú¹°°ü"
+strx3[strx3 == "±¹¸³Áß¾Ó¹Ú¹°"] <- "±¹¸³Áß¾Ó¹Ú¹°°ü"
+
+grep("[^½ÃÅ©¸´]°¡.",strx3,value = T)
+strx3 <- gsub(grep("[^½ÃÅ©¸´]°¡.",strx3,value = T), NA, strx3)
+
+grep("ºÏ¾Ç½ºÄ«ÀÌ", strx3, value = T)
+strx3 <- gsub("ºÏ¾Ç½ºÄ«ÀÌ$", "ºÏ¾Ç½ºÄ«ÀÌ¿şÀÌ", strx3)
+
+grep("ÈúÆ°", strx3, value = T)
+strx3[strx3 == "±×·£µåÈúÆ°¼­¿ï¿¡¼­"] <- "±×·£µåÈúÆ°"
+strx3[strx3 == "±×·£µå±×·£µåÈúÆ°¿ï"] <- "±×·£µåÈúÆ°"
+
+grep("ºí·Î±×", strx3, value = T)
+strx3 <- gsub("ºí·Î±×", NA, strx3)
+
+grep("°Ë»ö", strx3, value = T)
+strx3 <- gsub("°Ë»ö", NA, strx3)
+
+strx3 <- gsub("¾ß°æ", NA, strx3)
+strx3 <- gsub("ÃßÃµ", NA, strx3)
+strx3 <- gsub("º¢²É", NA, strx3)
+strx3 <- gsub("»çÁø", NA, strx3)
+strx3 <- gsub("¿À´Ã", NA, strx3)
+strx3 <- gsub("ÁÖ¸»", NA, strx3)
+strx3 <- gsub("³ªµéÀÌ", NA, strx3)
+strx3 <- gsub("´ÜÇ³", NA, strx3)
+strx3 <- gsub("¿äÇÑ", NA, strx3)
+strx3 <- gsub("¼Ò°³", NA, strx3)
+strx3 <- gsub("Çàº¹", NA, strx3)
+strx3 <- gsub("Ãâ»ç", NA, strx3)
+strx3 <- gsub("¼­¿ï¿¡", NA, strx3)
+strx3 <- gsub("ÄÚ½º", NA, strx3)
+strx3 <- gsub("ÇÏ³ª", NA, strx3)
+strx3 <- gsub("±Ù±³", NA, strx3)
+strx3 <- gsub("¸ğ½À", NA, strx3)
+strx3 <- gsub("ÀÌ°÷", NA, strx3)
+strx3 <- gsub("³¯¾¾", NA, strx3)
+strx3 <- gsub("½Ã°£", NA, strx3)
+strx3 <- gsub("¿©Çà", NA, strx3)
+strx3 <- gsub("°¨¼º", NA, strx3)
+strx3 <- gsub("±¸°æ", NA, strx3)
+strx3 <- gsub("ÃÔ¿µ", NA, strx3)
+strx3 <- gsub("°ü±¤", NA, strx3)
+strx3 <- gsub("¾È³ç", NA, strx3)
+strx3 <- gsub("À¯¸íÇÑ", NA, strx3)
+strx3 <- gsub("Ç³°æ", NA, strx3)
+
+grep("ºÏÃÌÇÑ¿Á", strx3, value = T)
+strx3[strx3 == "ºÏÃÌÇÑ¿Á¸¶"] <- "ºÏÃÌÇÑ¿Á¸¶À»"
+```
+
+
+```{r}
+table(unlist(str_extract_all(seoul_trip, "[[:alpha:]]{0,}[[:space:]]{0,}ÇÑ¿Á[[:space:]]{0,}[[:alpha:]]{0,}")))
+```
+
+
+
+
+numeric ¹«Á¶°Ç double -> ¹æÁö¹ı 1L
+
+```{r}
+strx3 <- strx3[nchar(strx3) > 1]
+```
+
+
+
+```{r}
+strx4 <- table(strx3)
+
+strx5 <- sort(strx4, decreasing = T)[1:19]
+strx5
+```
+
+
+```{r}
+library(wordcloud2)
+wordcloud2(strx5)
+```
+
+```{r}
+barplot(strx5, las = 2, ylim = c(0,30))
+```
+
+
+```{r}
+sum(integer(0))
+```
+
+
+
+
+
+
+
+

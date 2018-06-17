@@ -1,0 +1,397 @@
+## R-35일차(2018.2.13)
+  
+  # 35-1. 군집합(kmeans)
+
+## ■ 독일 은행의 대출 채무이행
+
+#1 데이터를 로드한다.
+credit <- read.csv("c:/r/credit.csv")
+str(credit)
+
+"* 컬럼 소개 
+
+1. 라벨 : default 변수 -->  yes : 대출금 상환 안함 
+no  : 대출금 상환
+
+2. checking_balance  --> 예금 계좌 
+
+3. savings_balance   --> 적금 계좌 
+
+※ 설명 : 대출 신청자의 예금계좌와 적금계좌의
+예금 정도를 확인해서 예금액이 많을수록
+대출이 안전하다고 가정할수있다.
+table(credit$checking_balance) 
+table(credit$savings_balance)
+
+4. amount : 대출 금액
+summary(credit$amount)
+※ 대출금액이 250 마르크에서 18424 마르크로 구성
+100 마르크 우리나라돈으로 6 ~ 7만원"
+
+
+#[문제] 대출금 상환을 한 사람과 안 한 사람의 비율을 출력하세요.
+
+prop.table(table(credit$default))
+#-> 대출금 상환(O) : 70% 대출금 상환(X) : 30%
+  
+
+#[문제] credit 데이터를 shuffle 시키고 훈련데이터(900)와 테스트데이터(100)로 나누시오
+
+?sample()
+train <- sample_n(credit,900)
+test <- setdiff(credit,train)
+str(train)
+str(test)
+
+library(recipes)
+library(dplyr)
+train <- recipe(~amount+default , data = credit)%>%
+  step_shuffle(amount,default)
+bake(prep(train))
+
+
+#[문제] 훈련 데이터를 의사결정트리 알고리즘중 C5.0 알고리즘을 적용해서 예측 모델을 생성 하세요.
+
+library(C50)
+model <- C5.0(train[-17], train[,17], trials = 100)
+summary(model)
+
+
+#[문제] 위에서 만든 결과로 이원 교차표를 생성하세요.
+
+library(gmodels)
+credit_pred <- predict(model, test[-17])
+CrossTable(test[,17], credit_pred, dnn = c('실제','예측'))
+
+
+#[문제] 모델의 성능을 개선해 보세요.
+
+library(FSelector)
+library(RWeka)
+information.gain(default~. , train)
+credit$checking_balance
+OneR()
+credit_1R <- OneR(default~. , train)
+summary(credit_1R)
+credit_1R
+669/900
+#-> OneR()은 정확도 74%로 개선된 효과를 볼 수 없을 것 같음
+
+JRip()
+credit_jrip <- JRip(default~., train)
+summary(credit_jrip)
+700/900
+#-> JRip()은 정확도 77%로 개선된 효과를 볼 수 없을 것 같음
+
+PART()
+credit_part <- PART(default~., train)
+summary(credit_part)
+828/900
+#-> PART()은 정확도 92%로 이걸로 가즈아!!
+  
+modelUp <- predict(credit_part, test[-17])
+CrossTable(test[,17], modelUp, dnn = c('실제','예측'))
+
+#그래프 그려보자
+
+#C5.0 산업표준
+
+#선생님 풀이
+
+
+#[문제] 대출금 상환을 한 사람과 안 한 사람의 비율을 출력하세요.
+
+#라벨 : default 변수 --> yes : 대출금 상환 안함 
+#                         no : 대출금 상환
+
+prop.table(table(credit$default))
+
+"과거 데이터를 분석해보니 대출금 상환 불이행자가
+30%나 되니 앞으로 30% 이내로 떨어뜨리는게
+은행의 목표가 되겠금 model 을 생성해야한다."
+
+
+#[문제] credit 데이터를 shuffle 시키고 훈련데이터(900)와 테스트데이터(100)로 나누시오
+
+set.seed(1) 
+"컴퓨터 프로그램에서 무작위와 관련된 모든 알고리즘은 사실 무작위가 아니라
+시작 숫자를 정해 주면 그 다음에는 정해진 알고리즘에 의해 마치 난수처럼
+보이는 수열을 생성한다. 다만 출력되는 숫자들 간의 상관관계가 없어 보일 뿐이다.
+또한 같은 알고리즘을 여러번 실행하더라도 다른 숫자가 나오도록 시작 숫자는
+현재 시간 등을 사용해서 매번 바꿔준다. 이런 시작 숫자를 시드(seed)라고 한다.
+따라서 시드를 사람이 수동으로 설정한다면 그 다음에 만들어지는 난수들은 예측할 수 있다."
+train_index <- sample(2,nrow(credit), prob=c(0.9,0.1), replace=T)
+
+credit_train <- credit[train_index==1, ] 
+credit_test  <- credit[train_index==2, ]
+
+prop.table(table(credit_train$default))
+prop.table(table(credit_test$default))
+
+
+#[문제] 위의 훈련 데이터를 의사결정트리 알고리즘중 C5.0 알고리즘을 적용해서 예측 모델을 생성 하세요.
+
+install.packages("C50") library(C50)
+
+credit_model <- C5.0(credit_train[,-17], credit_train[,17])
+credit_model
+summary(credit_model)
+credit_result <- predict(credit_model, credit_test[,-17])
+
+
+#[문제] 위에서 만든 결과로 이원 교차표를 그리세요.
+
+library(gmodels)
+
+CrossTable(credit_test[,17],credit_result, 
+           prop.chisq = F,prop.r = F,prop.c = F,
+           dnn=c('actual default','predicted default'))
+
+
+#[문제] 모델의 성능을 개선해 보세요.
+
+credit_model2 <- C5.0(credit_train[,-17], credit_train[,17], trials=10)
+credit_model2
+credit_result2 <- predict(credit_model2, credit_test[,-17])
+
+CrossTable(credit_test[,17], credit_result2, 
+           prop.chisq = F,prop.r = F,prop.c = F,
+           dnn=c('actual default','predicted default'))
+#전체 데이터를 train으로 잡고, test는 label 비율 비슷하게 뽑아서 만들어서 비교?
+  
+#step.1 : 대출금 상환여부에 따른 비율(test 뽑을때 적용)
+
+prop.table(table(credit$default))
+#-> NO : 70%, YES : 30%
+  
+
+#step.2 : test 뽑는다(각각 10개 row, text.1(비율고려) / test.2(비율미고려))
+
+n_yes <- which(credit$default=='yes')
+n_no <- which(credit$default=='no')
+int_yes <- sample(n_yes,7);int_yes
+int_no <- sample(n_no,3);int_no
+credit[c(int_yes,int_no),]
+names(train)
+tree_mod <- C5.0()
+plot(credit_model2)
+
+
+## 35-1. 군집합(유사한 아이템의 그룹)
+# - 데이터를 클러스터(cluster)로 자동 분리하는 '비지도 학습의 머신러닝(unsupervised)'
+# - 군집화는 데이터 안에서 발견되는 자연스런 그룹에 대한 통찰력을 제공
+# - 레이블이 없는 상태에서 분류
+
+# * 활용
+# - 타겟마케팅 켐페인을 위해 유사한 인구 통계나 구매패턴을 가진 그룹으로 고객을 세분화
+# - 알고 있는 클러스터 밖의 사용패턴을 찾아 무단 네트워크 침입과 같은 이상행동을 탐지
+# - 유사한 값을 갖는 특징을 적은 개수의 동질적인 범주로 그룹핑해 초대형 데이터셋을 단순화 할때
+
+# * k-means algorithm
+# - k개의 클러스터 중 하나에 할당하는데 이때 k는 사전에 결정된 수
+# - 특정값을 다차원 특징 공간의 좌표로 취급
+# - 유클리드 거리계산
+
+# * k값(참고용)
+# - knn = sqrt(n)
+# - kmeans = sqrt(n/2)
+
+# * kmeans 한계점
+# - k값 입력을 직접 지정해야 한다.(잘못지정하면 끝)
+# - 이상치값 민감하다(멀리 보내버린다) 
+
+
+# [ex.1]
+
+c <- c(3,4,1,5,7,9,5,4,6,8,4,5,9,8,7,8,6,7,2,1)
+row <- c('A','B','C','D','E','F','G','H','I','J')
+col <- c('X','Y')
+
+data <- matrix(c, nrow = 10, ncol = 2, byrow = TRUE, dimnames = list(row,col))
+data
+
+plot(data)
+
+library(stats) # kmeans() 
+
+km <- kmeans(data, 2)
+km
+
+# help(kmeans) - Value
+'※ kmeans returns an object of class "kmeans" which has a print and a fitted method. 
+  It is a list with at least the following components:
+  
+  - cluster	
+: A vector of integers (from 1:k) indicating the cluster to which each point is allocated.
+
+- centers	
+: A matrix of cluster centres.
+
+- totss	
+: The total sum of squares.
+※ function(x) sum(scale(x, scale = FALSE)^2) ~ sum((x-mean(X))^2)
+
+- withinss	
+: Vector of within-cluster sum of squares, one component per cluster.
+
+- tot.withinss	
+: Total within-cluster sum of squares, i.e. sum(withinss).
+
+- betweenss	
+: The between-cluster sum of squares, i.e. totss-tot.withinss.
+
+- size	
+: The number of points in each cluster.
+
+- iter	
+: The number of (outer) iterations.
+
+- ifault	
+: integer: indicator of a possible algorithm problem ??? for experts.'
+
+
+km$cluster
+
+km$centers
+
+km$totss
+
+ss <- function(x) sum(scale(x, scale = FALSE)^2)  # scale = T(표준화 O, i.e 평균 0, 표준편차 1)
+ss(data)
+
+km$withinss
+
+km$tot.withinss
+
+km$betweenss
+
+km$size
+2.494438-0.8017837
+
+cbind(data, km$cluster)
+plot(km$centers, pch = 22, bg = c("darkgreen","blue"), 
+     xlim = range(0:10), ylim = range(0:10), cex = 2)
+par(new = TRUE) # 겹치능 기능
+plot(data, pch = 20, col = km$cluster+1, xlim = range(0:10), ylim = range(0:10))
+
+library(ggplot2)
+ggplot(as.data.frame(data), aes(x = X, y= Y))+
+  geom_point(aes(x = X, y = Y))+
+  geom_point(data = as.data.frame(km$centers), pch = 0, col = c("red","blue"), size = 4)
+
+#추가(2018.2.14)
+library(factoextra)
+fviz_cluster(km, data = data, stand = F)+ggtitle("kmean example")
+
+library(tripack)
+library(RColorBrewer)
+km$centers[,1]
+color <- brewer.pal(4, "Pastel1")
+?tri.mesh
+academy_V <- voronoi.mosaic(km$centers[,1], km$centers[,2])
+academy_P <- voronoi.polygons(academy_V)
+
+## ■ k-평균(k-mean)을 활용한 군집화(10대 시장 찾기)
+
+# 목적 : 타겟 마케팅, 10대를 대상으로 영업을 하겠다.
+
+# ◈ 1단계 : 데이터 수집
+
+
+# ◈ 2단계 : 데이터 준비와 살펴보기
+
+teens <- read.csv("c:/r/snsdata.csv")
+teens
+str(teens)
+
+# gender 변수의 결측 데이터 확인
+table(teens$gender)
+table(teens$gender, useNA = "ifany")  # useNA : NA값도 포함
+table(is.na(teens$gender))
+summary(teens$gender)
+
+# age 변수의 결측 데이터 확인
+summary(teens$age)  # 오류(실수)부분 재확인하는 과정 
+# -> Min. Max.
+# 3.086 106.927 : 최소(대)값을 통해 자료 중 잘못된 부분이 있음을 알수 있다.
+
+# ※ summary(character) : 각 단어별 집계값 및 NA 집계값 반환 summary(number) : 사분위수 반환 및 NA 집계값 반환
+
+# age 이상치(outliers) 제거
+# 10대는 13 ~ 19살만 나머지는 NA로 변경(너무 많은 이상치를 제거하면 안되니...)
+teens$age <- ifelse(teens$age >= 13 & teens$age < 20, teens$age, NA)
+
+summary(teens$age)
+
+# 성별 재부여
+teens$female <- ifelse(teens$gender == "F" & !is.na(teens$gender), 1, 0)
+teens$no_gender <- ifelse(is.na(teens$gender), 1, 0)
+teens$female
+teens$no_gender
+
+# 재지정한 작업에 대한 확인
+table(teens$gender, useNA = "ifany")
+table(teens$female, useNA = "ifany")
+table(teens$no_gender, useNA = "ifany")
+teens[,c("gender","female","no_gender")]
+
+# 집단(cohort)별 나이 평균
+mean(teens$age) # doesn't work
+mean(teens$age, na.rm = TRUE) 
+
+# 집단별 나이(평균계산)
+aggregate(data = teens, age ~ gradyear, mean, na.rm = T)
+
+# 각 개인에 대한 예측된 나이 계산
+ave_age <- ave(teens$age, teens$gradyear,
+               FUN = function(x) mean(x, na.rm = TRUE))  # 그룹핑 후 적용할 합수사용 
+teens$age <- ifelse(is.na(teens$age), ave_age, teens$age)
+
+# 제거한 결측치에 대한 요약 결과 확인
+summary(teens$age)
+
+
+# ◈ 3단계 : 데이터로 모델 훈련
+
+interests <- teens[5:40]
+interests_z <- as.data.frame(lapply(interests, scale))
+
+sqrt(ncol(teens)/2)  # 4.636809
+teen_clusters <- kmeans(interests_z, 5)  # 5개 군집
+teen_clusters
+
+
+# ◈ 4단계 : 모델 성능 평가
+
+# 군집의 크기 확인
+teen_clusters$size
+
+# 군집의 중앙점(centers) 확인
+teen_clusters$centers
+
+teen_clusters$center
+teen_clusters$withinss
+teen_clusters$tot.withinss
+teen_clusters$totss
+
+
+# ◈ 5단계 : 모델 성능 향상
+
+# 본래 데이터 프레임에 군집ID(cluster ID) 적용
+teens$cluster <- teen_clusters$cluster
+plot(teens)
+
+# 처음 5개 데이터 확인
+teens[1:5, c("cluster", "gender", "age", "friends")]
+
+# 군집별 평균 나이
+aggregate(data = teens, age ~ cluster, mean)
+
+# 군집별 여성 비율
+aggregate(data = teens, female ~ cluster, mean)
+
+# 군집별 친구 수의 평균
+aggregate(data = teens, friends ~ cluster, mean)
+aggregate(data = teens, jesus ~ cluster, mean)
+(18*25000 - 220000)
+4500*18

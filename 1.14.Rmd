@@ -1,0 +1,178 @@
+R-14일차(2018.1.15)
+
+
+
+[문제165] 한 주간 영업 판매량을 막대그래프를 생성하데 막대그래프의 색상은 판매량에 따라 다르게 해야 합니다.
+          판매량이 
+                   200 이상이면 red, 
+                   199 ~ 150 이면 yellow, 
+                   149 ~ 100 이면 blue, 
+                   99 ~ 50 pink, 
+                   49 ~ black
+          색으로 출력하세요.
+
+       월요일 : 70
+       화요일 : 151
+       수요일 : 210
+       목요일 : 180
+       금요일 : 250
+       토요일 : 300
+       일요일 : 40
+       
+col = x
+
+```{r}
+day <- c("월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일")
+qty <- c(70,151,210,180,250,300,40)
+x <- c()
+
+for(i in qty){
+   if(i >= 200){x <-c(x,"red")}
+   else if(i <= 199 & i >= 150){x <-c(x,"yellow")}
+   else if(i <= 149 & i >= 100){x <-c(x,"blue")}
+   else if(i <= 99 & i >= 50){x <-c(x,"pink")}
+   else if(i <= 49){x <-c(x,"black")}
+}
+x
+```
+```{r}
+barplot(qty, names.arg = day, col = x, main = "qty(1week)",
+        legend.text = c("~ 49", 
+                        "50 ~ 99", 
+                        "100 ~ 149", 
+                        "150 ~ 199", 
+                        "200 ~"),
+        args.legend = list(x= "topleft", 
+                           fill = c("black", "pink", "blue", "yellow", "red"), 
+                           cex = 0.7),
+        las = 1)
+abline(h = c(50, 100, 150, 200), lty = 3, lwd = 3, col = "blue")
+```
+
+
+
+[문제166] itwill hotel 투수객 조사를 통해 고객들의 평가에 대한 정보는  survey.csv에 저장 되어 있습니다.
+          파일 내용을 통해서 호텔에 대한 고객들의 반응을 그래프로 생성하세요.
+```{r}
+sur <- t(survey)
+us <- unique(sur)
+us <- ordered(us, c("매우나쁨", "나쁨", "보통", "좋음", "매우좋음"))
+sur
+us <- sort(us, decreasing = T)
+```
+
+
+```{r}
+y <- c()
+
+for(i in us){
+   y <- c(y,sum(sur[,1] == i))
+}
+
+y
+```
+
+
+ - sol.1 : bar chart
+```{r}
+bp <- barplot(y, names.arg = us,
+              main = "itwill hotel 평가",
+              ylim = c(0,10), las = 1,
+              col = c("grey", "orange","grey", "grey", "grey"))
+text(x = bp, y = y, labels = y, pos = 3)
+abline(h = seq(0,10,1), lty = 3)
+box()
+```
+
+
+ - sol.2 : pie chart
+```{r}
+pie(y, labels = paste(us,paste(y*100/sum(y),'%',sep = '')), 
+    clockwise = T, main = "itwill hotel 평가",
+    col = topo.colors(length(us)))
+```
+
+
+ - sol.3 : pie3D
+```{r}
+library(plotrix)
+
+pie3D(y, labels = paste(us,paste(y*100/sum(y),'%',sep = '')), col = topo.colors(length(us)),
+      explode = 0.1, labelcex = 1, main = "itwill hotel 평가", height = .2, shade = .3)
+```
+ 
+
+
+ - 선생님 풀이
+```{r}
+s <- as.vector(t(survey))    # t ☆☆☆☆
+u <- unique(s)
+u <- factor(u, levels = c("매우좋음", "좋음", "보통", "나쁨", "매우나쁨"))
+res <- data.frame(eval = sort(u), cn = rep(0, each = NROW(u)))
+
+for(i in s){
+  
+  res[res$eval == i, "cn"] <- res[res$eval == i, "cn"] + 1
+  
+}
+
+res
+```
+ 
+```{r}
+proportion <- round((res$cn/sum(res$cn))*100)
+proportion
+
+label <- paste(res$eval, "\n", res$cn, "명", sep = "")
+label
+
+pie(res$cn, init.angle = 90, labels = label, main = "itwill hotel 품질", 
+    col = rainbow(length(res$cn)))
+```
+
+
+
+[문제167] 2016년_서울_주요구별_병원현황.csv file을 읽어 들인후 구별로 진료과목별 
+          병원현황을 그룹막대형 그래프로 만드세요.
+
+```{r}
+hospital
+```
+
+```{r}
+barplot(as.matrix(hospital[,2:ncol(hospital)]), 
+        names.arg = colnames(as.matrix(hospital)[,2:ncol(hospital)]),
+        beside = TRUE, ylim = c(0, 350), cex.names = .7, cex.axis = .7,
+        col = rainbow(nrow(hospital)), main = "2016년 서울 주요구별 병원현황",
+        ylab = "병원수(개)")
+
+abline(h = seq(0,350,25), v = seq(0,100,10), lty = 3)
+legend(x = "topright", legend = hospital$표시과목, 
+       fill = rainbow(nrow(hospital)), cex = .7, 
+       bg = "skyblue", ncol = 3)
+box()
+```
+
+
+
+[문제168] 강남구 과목별 병원수만 막대형 그래프를 생성하세요.(단 10개 1개로 표현하세요.)
+```{r}
+barplot(as.matrix(hospital$강남구/10), names.arg = hospital$표시과목,
+        beside = T, main = "강남구 과목별 병원현황", 
+        ylim = c(0,35), ylab = "병원수(1/10개)", las = 1, 
+        font.main = 15, font = 15, col = rainbow(nrow(hospital)), 
+        density = 40, cex.name = .8)
+# axis(2,ylim = seq(0,35,10))
+abline(h = seq(0,35,5), lty = 3)
+legend("topright", legend = hospital$표시과목, 
+       fill = rainbow(nrow(hospital)), cex = .7, ncol = 2)
+box()
+```
+
+
+
+
+
+
+
+

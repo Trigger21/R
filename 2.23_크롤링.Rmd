@@ -1,0 +1,503 @@
+R-23ÀÏÂ÷(2018.1.26)
+
+    23-1. Å©·Ñ¸µ 
+
+# 23-1. ½ºÅ©·Ñ¸µ 
+
+```{r}
+install.packages("rvest")
+library(rvest)
+library(dplyr)  # %>%
+library(httr)
+```
+
+ary()
+```{r}
+html <- read_html("http://search.joins.com/news?keyword=%EB%B9%85%EB%8D%B0%EC%9D%B4%ED%84%B0&cloc=joongang|section|subsection")
+html
+```
+
+
+```{r}
+url <- html_nodes(html, css = ".list_default .headline")%>%
+  html_nodes('a')%>%
+  html_nodes('href')
+url
+```
+
+
+  - Áß¾ÓÀÏº¸ 
+
+```{r}
+html <- read_html("http://search.joins.com/News?Keyword=%EB%B9%85%EB%8D%B0%EC%9D%B4%ED%84%B0&SortType=New&SearchCategoryType=News&PeriodType=All&ScopeType=All&ImageType=All&JplusType=All&BlogType=All&ImageSearchType=Image&TotalCount=0&StartCount=0&IsChosung=False&IssueCategoryType=All&IsDuplicate=True&Page=1&PageSize=3&IsNeedTotalCount=True")
+html
+
+url <- html_nodes(html,css=".list_default .headline") %>%
+  html_nodes('a')%>%
+  html_attr('href')
+url  
+
+
+html <- read_html("http://news.joins.com/article/22319631")
+
+html_node(html, "#article_body")%>%    # ¾ÆÀÌµð ¼Ó¼º(#)
+  html_text()
+```
+
+```{r}
+html <- read_html(url[12])
+html_node(html, "#article_body")%>%    # ¾ÆÀÌµð ¼Ó¼º(#)
+  html_text()
+```
+
+
+http://search.chosun.com/search/total.search?query=%ED%97%88%EA%B2%BD%EC%98%81&pageconf=total
+```{r}
+html <- read_html("http://search.chosun.com/search/news.search?query=%ED%97%88%EA%B2%BD%EC%98%81&pageno=0&orderby=&naviarraystr=&kind=&cont1=&cont2=&cont5=&categoryname=&categoryd2=&c_scope=news&sdate=&edate=&premium=")
+html
+
+url <- html_nodes(html, css = "dl.search_news dt")%>%
+  html_nodes("a")%>%
+  html_attr("href")
+url
+
+
+html.1 <- read_html(url[1])
+html.1  
+
+html_node(html.1, "#article_2011")%>%    # ¾ÆÀÌµð ¼Ó¼º(#)
+  html_text()
+```
+
+
+
+```{r}
+html <- read_html("https://search.naver.com/search.naver?query=%EB%8B%88%EC%B2%B4&where=news&ie=utf8&sm=nws_hty")
+html
+
+url <- html_nodes(html, css = ".type01 dt a")%>%
+   html_attr("href")
+url
+
+html <- read_html(url[2])
+
+html_nodes(html, "#body")%>%
+  html_text()
+```
+
+
+
+ - ³×ÀÌ¹ö ±ÝÀ¶-½ò¸®µå-Á¾¸ñÅä·Ð½Ç(2017.1.26 ~ 2018.1.26) °Ô½Ã±Û ºÐ¼®
+
+```{r}
+# text ÃÊ±âÈ­(³ªÁß¿¡ °Ô½ÃÆÇ ±Û ´ãÀ» º¤ÅÍ)
+text <- NULL    
+
+## ÀüÃ¼ÆäÀÌÁö : 1~196
+# °¢ ÆäÀÌÁöº°·Î °¢ °Ô½Ã±Û¿¡ ´ëÇÑ urlÀ» »ý¼º 
+for(i in 1:196){  
+
+html <- read_html(paste0("http://finance.naver.com/item/board.nhn?code=050890&page=", i), encoding = "euc-kr")
+
+url <- html_nodes(html, css = "table.type2 td.title")%>%
+  html_nodes("a")%>%
+  html_attr("href")
+
+## ÆäÀÌÁöº° °Ô½Ã±Û : 1~20°³  
+# °¢ °Ô½Ã±Û ³»¿ë text(º¤ÅÍ)¿¡ ÀúÀå 
+for(j in 1:20){   
+
+url1 <- paste0("http://finance.naver.com", url[j])
+html1 <- read_html(url1, encoding = "euc-kr")
+
+text <- c(text, html_nodes(html1, "#body")%>% html_text())
+
+}
+}
+```
+
+
+```{r}
+# À§ °á°ú È®ÀÎ 
+text
+```
+
+```{r}
+library(wordcloud2)  # wordcloud2() »ç¿ë
+library(KoNLP)       # SimplePos() »ç¿ë
+library(stringr)     # str_match_all(), str_length() »ç¿ë
+```
+
+
+```{r}
+txt <- gsub('\r',' ',text) 
+t1 <- SimplePos09(txt)
+t2 <- unlist(str_match_all(t1, '([A-Z°¡-ÆR]+)/N'))
+t2 <- t2[!str_detect(t2, '/')]
+head(t2)
+
+t3 <- t2[str_length(t2) > 1]
+t6 <- table(t3)
+
+t6 <- t6[t6 > 3]
+t7 <- sort(t6, decreasing = T)
+head(t7, 100)
+head(names(t7),100)
+
+wordcloud2(t7, size = .6)  
+```
+
+```{r}
+library(jpeg) # °á°ú¹° jpg ÀúÀå
+```
+
+```{r}
+jpeg("c:/r/solid.jpg")
+
+wordcloud2(t7, size = .6)
+
+dev.off()
+```
+
+
+
+
+```{r}
+html <- read_html(url[1], encoding = "euc-kr")
+
+html_nodes(html, "#body")%>%
+  html_text()
+```
+
+
+#Àº ¾ÆÀÌµð°í . Àº ½ºÅ¸ÀÏ
+
+
+
+
+
+```{r}
+html_jj <- read_html("http://map.daum.net/?map_type=TYPE_MAP&q=%EC%A4%91%EA%B5%AD%EC%A7%91&currentBound=true&urlX=513780&urlY=1115332&urlLevel=3")
+html_jj
+```
+
+```{r}
+url_jj <- html_nodes(html_jj, css = ".PlaceItem .para")%>%
+  html_nodes("a")%>%
+  html_attr("href")
+url_jj
+```
+
+```{r}
+html_nodes(html_jj, "#name")%>%
+  html_text()
+```
+
+
+
+¼÷Á¦ : °ü½ÉÀÖ´Â ÁÖÁ¦ ½ºÅ©·Ñ¸µ ÇØ¼­ °á°ú¹° ¹ßÇ¥ÁØºñ(ÀÛÀº Æ÷Æ®Æú¸®¿À)  
+ - Çã°æ¿µ, ppap, 
+
+
+```{r}
+html <- read_html("http://book.naver.com/bookdb/review.nhn?bid=1490613&page=2")
+html
+```
+
+
+```{r}
+url <- html_nodes(html, css = ".review .basic dt")%>%
+        html_nodes("a")%>%
+        html_attr("href")
+url
+```
+
+```{r}
+x<-read_html(url[2])
+x
+html_nodes(x, "#twocols")%>%
+  html_text()
+```
+
+
+
+
+
+```{r}
+text <- NULL
+
+for(i in 1:length(url)){
+  
+  html_nodes(url[i], )
+  
+}
+```
+
+
+```{r}
+Sys.setlocale(category = "LC_ALL", locale = "us")
+Encoding(url) <- 'UTF-8'
+```
+
+
+
+
+ - ³×ÀÌ¹ö Ã¥ - ½Ã°èÅÂ¿±¿À·»Áö ¸®ºä ºÐ¼®
+
+```{r}
+# text ÃÊ±âÈ­(³ªÁß¿¡ °Ô½ÃÆÇ ±Û ´ãÀ» º¤ÅÍ)
+text <- NULL    
+
+## ÀüÃ¼ÆäÀÌÁö : 1~27
+# °¢ ÆäÀÌÁöº°·Î °¢ °Ô½Ã±Û¿¡ ´ëÇÑ urlÀ» »ý¼º 
+for(i in 1:10){  
+
+html <- read_html(paste0("http://finance.naver.com/item/board.nhn?code=053110&page=", i), encoding = "euc-kr")
+
+url <- html_nodes(html, css = "table.type2 td.title")%>%
+  html_nodes("a")%>%
+  html_attr("href")
+
+## ÆäÀÌÁöº° °Ô½Ã±Û : 1~20°³  
+# °¢ °Ô½Ã±Û ³»¿ë text(º¤ÅÍ)¿¡ ÀúÀå 
+for(j in 1:length(url)){   
+
+url1 <- paste0("http://finance.naver.com", url[j])
+
+html1 <- read_html(url1, encoding = "euc-kr")
+
+text <- c(text, html_nodes(html1, "#body")%>% html_text())
+
+}
+}
+```
+
+
+```{r}
+# À§ °á°ú È®ÀÎ 
+text
+```
+
+```{r}
+install.packages("wordcloud2")
+library(wordcloud2)  # wordcloud2() »ç¿ë
+
+install.packages("KoNLP")
+library(KoNLP)       # SimplePos() »ç¿ë
+library(stringr)     # str_match_all(), str_length() »ç¿ë
+```
+
+
+```{r}
+txt <- gsub('\r',' ',text) 
+t1 <- SimplePos09(txt)
+t2 <- unlist(str_match_all(t1, '([A-Z°¡-ÆR]+)/N'))
+t2 <- t2[!str_detect(t2, '/')]
+head(t2)
+
+t3 <- t2[str_length(t2) > 1]
+t6 <- table(t3)
+
+t6 <- t6[t6 > 2]
+t7 <- sort(t6, decreasing = T)
+head(t7, 100)
+head(names(t7),100)
+
+wordcloud2(t7, size = .6)  
+```
+
+```{r}
+library(jpeg) # °á°ú¹° jpg ÀúÀå
+```
+
+```{r}
+jpeg("c:/r/solid.jpg")
+
+wordcloud2(t7, size = .6)
+
+dev.off()
+```
+
+
+
+
+```{r}
+html_gj <- read_html("http://tour.gwangju.go.kr/home/tour/mytour/open.cs?searchCondition=&searchKeyword=&&pageIndex=1")
+html_gj
+```
+
+
+
+```{r}
+url_gj <- html_nodes(html_gj, css = ".mycourse_board li")%>%
+           html_nodes("a")%>%
+           html_attr("href")
+url_gj
+```
+
+
+```{r}
+html1 <- read_html(paste0("http://tour.gwangju.go.kr/home/tour/mytour/open.cs",url_gj[1]))
+
+html_nodes(html1, ".custom_view_body .desc_course")%>%
+  html_text
+```
+
+
+                                   ------------------------------
+                                         ±¤ÁÖ ¿©ÇàÄÚ½º ÃßÃµ
+                                         (ÃâÃ³ : ¿À¸Å±¤ÁÖ)
+                                   ------------------------------
+
+## ¿À¸Å±¤ÁÖ È¨ÆäÀÌÁö(http://tour.gwangju.go.kr/home/main.cs)¿¡¼­ ³×Æ¼Áð ÃßÃµÄÚ½º Å©·Ñ¸µ
+```{r}
+# text ÃÊ±âÈ­(³ªÁß¿¡ ÃßÃµÄÚ½º ´ãÀ» º¤ÅÍ)
+text <- NULL
+
+# ÃÑ ÆäÀÌÁö : 1~6
+for(i in 1:6){
+  
+  html_gj <- read_html(paste0("http://tour.gwangju.go.kr/home/tour/mytour/open.cs?searchCondition=&searchKeyword=&&pageIndex=", i))
+  
+  url_gj <- html_nodes(html_gj, css = ".mycourse_board li")%>%
+            html_nodes("a")%>%
+            html_attr("href")
+  
+# °¢ ÆäÀÌÁö´ç °Ô½Ã±Û   
+  for(j in 1:length(url_gj)){
+    
+   html_gj.1 <- read_html(paste0("http://tour.gwangju.go.kr/home/tour/mytour/open.cs",url_gj[j]))
+   
+   text <- c(text, 
+             html_nodes(html_gj.1, ".custom_view_body .desc_course")%>%
+             html_text())
+     
+  }
+}
+```
+
+
+# Å©·Ñ¸µ °á°ú È®ÀÎ
+```{r}
+text
+```
+
+
+```{r}
+library(wordcloud2)  # wordcloud2() »ç¿ë
+library(KoNLP)
+useSejongDic()
+useNIADic()
+```
+
+
+# Á¤ÀçÀÛ¾÷ 
+```{r}
+text1 <- unlist(strsplit(text, "\t"))
+text1[grep("\n", text1)] <- ""
+text2 <- grep("[°¡-ÆR]", text1, value = T)
+text3 <- unlist(strsplit(text2, "^[[:digit:]$]"))
+text4 <- unlist(strsplit(text3, "^[[:punct:]]"))
+text4 <- grep("[°¡-ÆR]", text4, value = T)
+text5 <- sort(table(text4), decreasing = T)
+
+text5
+```
+
+
+```{r}
+wordcloud2(text5)
+```
+
+
+
+
+
+```{r}
+install.packages("ggmap")
+library(ggmap)
+```
+
+
+# ÃßÃµ ¸í¼Ò TOP 10, µ¥ÀÌÅÍÇÁ·¹ÀÓ Çü½ÄÀ¸·Î º¯È¯ 
+```{r}
+head(text5, 10)
+text6 <- as.data.frame(head(text5, 10))
+names(text6) <- c("loc", "cnt")
+
+text6
+```
+
+
+```{r}
+# repeat{
+#   cen <- geocode(enc2utf8(text6$loc))
+#   if(is.na(cen) == FALSE){break}
+# }
+```
+
+
+# Àå¼Òº° °æµµ, À§µµ(µ¥ÀÌÅÍÇÁ·¹ÀÓ Çü½ÄÀ¸·Î »ý¼º)
+```{r}
+cen <- data.frame(lon = c(126.91931,126.91859,126.92462,126.92390,126.79194,
+                          126.91990,126.91187,126.91787,126.79469,126.85700), 
+                  lat = c(35.12882,35.14812,35.15667,35.13276,35.13643,
+                          35.14700,35.14189,35.15195,35.13960,35.15503))
+cen
+```
+
+
+# °æµµ, À§µµ text6¿¡ Ãß°¡ 
+```{r}
+text6$lon <- cen$lon
+text6$lat <- cen$lat
+
+text6
+```
+
+
+```{r}
+gj <- geocode(enc2utf8("±¤ÁÖ±¤¿ª½Ã"))
+
+map1 <- get_map(location = as.numeric(gj), zoom = 12, maptype = "hybrid", color = "bw")
+map2 <- get_map(location = as.numeric(gj), zoom = 12, maptype = "roadmap", color = "bw")
+```
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+ggmap(map1)+
+  geom_point(data = text6, aes(x = lon, y = lat, colour = loc, size = cnt), alpha = .7)
+```
+
+
+```{r}
+ggmap(map2)+
+  geom_point(data = text6, aes(x = lon, y = lat), 
+             colour = rainbow(nrow(text6)), size = 5, alpha = .6)+
+  geom_text(data = text6, aes(x = lon, y = lat, label = loc), 
+            check_overlap = TRUE, size = 3, nudge_x = .01, nudge_y = .002)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

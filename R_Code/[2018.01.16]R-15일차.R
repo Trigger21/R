@@ -1,0 +1,291 @@
+## R-15일차(2018.1.16)
+
+  # 15-1. animation
+  # 15-2. 난수
+  # 15-3. rasterImage
+
+
+#[문제169] 2016년_서울_주요구별_병원현황.csv file을 읽어 들인후 구별 진료과목에 해당하는 병원수를 
+#          막대형 그래프로 만드세요. 단, 막대높이는 10개당 1개로 만드시고 막대그래프 프로그램은 
+#          한개를 가지고 모든 구별 막대그래프가 생성되도록 만드세요.
+
+hospital
+par(mfrow = c(2, 5))
+
+for(i in names(hospital[,2:ncol(hospital)])){
+  barplot(as.matrix(hospital[,i]/10), names.arg = hospital$표시과목,
+          beside = T, main = paste(i,"과목별 병원현황"), 
+          ylim = c(0,35), ylab = "병원수(1/10개)", las = 2, 
+          font.main = 15, font = 15, col = rainbow(nrow(hospital)), 
+          density = 40, cex.name = .8, axes = FALSE)
+  axis(2,ylim = seq(0,35,10))
+  abline(h = seq(0,35,5), lty = 3)
+  #legend("topright", legend = hospital$표시과목, fill = rainbow(nrow(hospital)), cex = .7)
+  box()  
+}
+
+
+## 15-1. animation
+install.packages("animation")
+library(animation)
+
+myani <- function(){
+  n <- ani.options("nmax")
+  x <- sample(1:n)
+  y <- sample(1:n)
+  
+  for(i in 1:n){
+    plot(x[i], y[i], cex = 4, col = rgb(runif(100),runif(100),runif(100)), pch = 21, lwd = 3, ylim = c(0,50), xlim = c(0,50))
+    ani.pause()
+  }  
+}
+myani()
+ani.options("nmax")
+
+# - animation.option을 설정, 조회 함수
+# - nmax : animation의 프레임을 만들기 위한 반복수 기본값(50)
+# - interval : animation의 시간 간격(초단위) 기본값 1초
+# ani.pause() : 주어진 시간동안에 대기하고 현재 화면을 지운다
+
+ani.pause("interval")
+
+# sample(1:10) : 1 ~ 10까지 램덤하게 생성
+
+sample(1:100)
+
+
+## 15-2. 난수
+runif(n, min, max)
+
+# n : 생성할 난수의 수 min, max : 난수의 범위
+
+runif(10,0,1)
+#정규분포를 따르는 난수를 생성
+runif(5)
+myani2 <- function(){
+  for(i in 1:10){
+    y <- runif(5,1,2)
+    barplot(y, ylim = c(0,2), col = rainbow(5))
+    ani.pause(5)
+  }
+}
+
+myani2()
+myani3 <- function(){
+  for(i in 10:0){
+    plot.new()
+    rect(0,0,1,1, col = "gold")      # rect : 사각형
+    s <- i - 1
+    text(0.5,0.5,i,cex = s, col = rgb(1,0,0))
+    ani.pause()
+  }
+}
+
+myani3()
+#빛의 3원색 : red, green, blue
+
+plot.new()
+text(.4,.3,"대한민국",cex = 9, col = "red")
+rect(x1(left), y1(bottom), x2(right), y2(top))
+plot.new()     # 새로운 그래픽 프레임 생성
+rect(0,0,1,1)  # plot 영역 내부의 좌표에 사각형 그리기
+plot.new() 
+rect(0,0,.25,.5)
+chan <- c("knife","blade","axe","machete", "kukuri")
+
+myani4 <- function(){
+  for(i in chan){
+    plot.new()
+    rect(0,0,1,1, col = rgb(runif(s),runif(s),runif(s)))      # rect : 사각형
+    s <- nchar(chan)
+    text(0.5,0.5,i,cex = s, col = rgb(runif(s),runif(s),runif(s)))
+    ani.pause()
+  }
+}
+
+myani4()
+s
+sd(runif(10))
+install.packages("jpeg") -> library(jpeg)
+library(jpeg)
+
+
+## 15-3. 화면에 이미지 출력해주는 함수
+rasterImage(image, xleft, ybottom, xright, ytop)
+
+#xleft : x축 왼쪽
+#xright : x축 오른쪽
+#ybottom : y축 하단
+#ytop : y축 상단
+ig <- c(1:12,"우주선내부")
+
+for(i in ig){
+  img <- paste("C:/R/", i, ".jpg", sep = '')
+  img <- readJPEG(img)
+  
+  plot.new()
+  rect(0,0,1,1, col = "white", border = "white")
+  
+  rasterImage(img,0,0,1,1)
+  ani.pause()
+}
+
+
+#[문제170] 모기업의 영업팀은 'A팀','B팀','C팀','D팀','E팀'있습니다. 
+#          영업팀별 영업 매출액은 90,45,70,67,85 있습니다. 
+#          이자료를 이용해서 barplot, pie, pie3D 그래프를 만드세요. 
+#          각 그래프를 jpg파일로 저장한 후 이 파일을 애니메이션으로 출력해주세요.
+
+s_t <- c('A팀','B팀','C팀','D팀','E팀')
+s_a <- c(90,45,70,67,85)
+jpeg("C:/R/bar_chart.jpg")
+
+barplot(s_a, names.arg = s_t, main = "영업팀 매출액",
+        ylim = c(0,100), col = rainbow(length(s_t)), density = 60,
+        las = 1)
+abline(h = seq(0,100,10), lty = 2)
+box()
+jpeg("C:/R/pie_chart.jpg")
+
+pie(s_a, labels = paste(s_t,paste(round(s_a*100/sum(s_a)),'%',sep = '')),
+    clockwise = TRUE, main = "영업팀 매출액")
+library(plotrix)
+jpeg("C:/R/pie3d_chart.jpg")
+
+pie3D(s_a, labels = paste(s_t,paste(round(s_a*100/sum(s_a)),'%',sep = '')),
+      main = "영업팀 매출액", explode = .05, shade = .3, height = .2, labelcol = rgb(.2,.2,.2))
+ig <- c("bar_chart","pie_chart","pie3d_chart")
+
+for(i in ig){
+  img <- paste("C:/R/", i, ".jpg", sep = '')
+  img <- readJPEG(img)
+  
+  plot.new()
+  rect(0,0,1,1, col = "white", border = "white")
+  
+  rasterImage(img,0,0,1,1)
+  ani.pause()
+}
+
+
+#[문제171] 문제169번을 수행하면서 구이름.jpg형식으로 파일이 생성하도록 한후 
+#          구이름.jpg를 이용해서 애니메이션을 수행하세요.
+
+#자동으로 jpg 저장 -> 애니메이션 수행
+
+for(i in names(hospital[,2:ncol(hospital)])){
+  
+  jpeg(paste("C:/R/",i,".jpg",sep = ''))  
+  
+  barplot(as.matrix(hospital[,i]/10), names.arg = hospital$표시과목,
+          beside = T, main = paste(i,"과목별 병원현황"), 
+          ylim = c(0,35), ylab = "병원수(1/10개)", las = 2, 
+          font.main = 15, font = 15, col = rainbow(nrow(hospital)), 
+          density = 40, cex.name = .8, axes = FALSE)
+  axis(2,ylim = seq(0,35,10))
+  abline(h = seq(0,35,5), lty = 3)
+  box()  
+  
+  dev.off()
+}
+library(animation)
+ig <- names(hospital[,2:ncol(hospital)])
+
+for(i in ig){
+  img <- paste("C:/R/", i, ".jpg", sep = '')
+  img <- readJPEG(img)
+  
+  plot.new()
+  rect(0,0,1,1, col = "white", border = "white")
+  
+  rasterImage(img,0,0,1,1)
+  ani.pause()
+}
+
+
+#아름다운 색깔(김승혁 형)
+library("colorspace")  # rainbow_hcl
+heat_hcl(12,c=c(80,30), l=c(30,90), power=c(1/5,1.5)) 
+barplot(s_a, names.arg = s_t, main = "영업팀 매출액",
+        ylim = c(0,100), col = rainbow_hcl(11), 
+        density = 60, las = 1)
+abline(h = seq(0,100,10), lty = 2)
+box()
+png
+img <- readPNG("C:/R/insertion_sort.png")
+
+plot.new()
+rect(0,0,1,1, col = "white", border = "white")
+
+rasterImage(img,0,0,1,1)
+ani.pause()
+install.packages("RJDBC")
+"""
+Installing package into ‘C:/Users/STU/Documents/R/win-library/3.4’ (as ‘lib’ is unspecified) trying URL 'https://cran.rstudio.com/bin/windows/contrib/3.4/RJDBC_0.2-5.zip' Content type 'application/zip' length 67568 bytes (65 KB) downloaded 65 KB
+
+package ‘RJDBC’ successfully unpacked and MD5 sums checked
+
+The downloaded binary packages are in C:\Users\STU\AppData\Local\Temp\Rtmp63QFhg\downloaded_packages
+"""
+library(RJDBC)
+
+"""필요한 패키지를 로딩중입니다: DBI 필요한 패키지를 로딩중입니다: rJava"""
+
+jdbcDriver <- JDBC(driverClass="oracle.jdbc.OracleDriver", classPath="C:/r/ojdbc6.jar")
+
+conn <- dbConnect(jdbcDriver, "jdbc:oracle:thin:@localhost:1521/xe", "hr", "hr")
+
+emp <- dbGetQuery(conn, "select * from employees")
+
+dept <- dbGetQuery(conn, "select * from departments")
+
+class(emp) [1] "data.frame"
+
+loc <- dbGetQuery(conn, "select * from locations")
+loc
+library(plyr)
+ddply(emp, 'DEPARTMENT_ID', summarise, CNT = length(EMPLOYEE_ID))
+
+library(sqldf)
+sqldf("select department_id,count(*)
+      from emp
+      group by department_id")
+
+library(dplyr)
+emp%>%
+  group_by(DEPARTMENT_ID)%>%
+  summarise_at('EMPLOYEE_ID', length)
+
+
+#[문제172] R에서 오라클 접속한 후 부서별 인원수에 대한 막대그래프 그리세요.
+
+#sol.1 : 기존방법
+library(sqldf)
+cnt_dept <- sqldf("select coalesce((select department_name from dept
+                  where department_id = e.department_id),'부서(X)') dept_name, e.cnt
+                  from (select department_id, count(*) cnt
+                  from emp
+                  group by department_id) e")
+cnt_dept <- orderBy(~dept_name, cnt_dept)
+cnt_dept
+barplot(cnt_dept$cnt, names.arg = cnt_dept$dept_name, main = "부서별 인원수",
+        ylim = c(0,50), col = rainbow_hcl(nrow(cnt_dept)), cex.name = .7)
+abline(h = seq(5,50,5), lty = 3)
+box()
+
+#sol.2 : 오라클 접속
+dq <- dbGetQuery(conn, "select nvl(department_name, '소속(X)') dept_name,
+                 count(*) cnt
+                 from employees e, departments d
+                 where e.department_id = d.department_id(+)
+                 group by nvl(department_name, '소속(X)')")
+library(doBy)
+dq <- orderBy(~DEPT_NAME, dq)
+barplot(dq$CNT, names.arg = dq$DEPT_NAME, main = "부서별 인원수",
+        ylim = c(0,50), col = rainbow_hcl(nrow(cnt_dept)), 
+        las = 1, cex.name = .7)
+abline(h = seq(5,50,5), lty = 3)
+box()
+
+#dbReadTable : 한번에 통으로 가져오려면
+dbReadTable(conn, "DEPARTMENTS")

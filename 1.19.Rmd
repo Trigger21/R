@@ -1,0 +1,318 @@
+R-19ÀÏÂ÷(2018.1.22)
+
+
+
+# ¼­¿ï½Ã °Ô½ÃÆÇ 
+
+```{r}
+library(KoNLP)
+library(wordcloud)
+library(wordcloud2)
+```
+
+```{r}
+seoul <- readLines("c:/r/seoul.txt")
+seoul
+```
+
+
+```{r}
+noun_seoul <- unlist(extractNoun(seoul))
+word_seoul <- table(noun_seoul)
+```
+
+```{r}
+df <- as.data.frame(word_seoul)
+df
+df <- df[!df$noun_seoul %in% grep("[0-9]", df$noun_seoul, value = T),]
+df <- df[!df$noun_seoul %in% grep("O+$", df$noun_seoul, value = T),]
+
+library(doBy)
+df <- orderBy(~-Freq,df)
+df
+```
+
+
+```{r}
+df1 <- df[-c(1:2),]
+df1 <- df1[df1$Freq > 1,]
+wordcloud2(df1)
+```
+
+
+
+
+ - ¼±»ý´Ô Ç®ÀÌ
+ 
+```{r}
+useSejongDic()
+buildDictionary(ext_dic = )
+```
+ 
+```{r}
+data2 <- SimplePos09(seoul)
+data2 <- str_match(data2,'([°¡-ÆR]+)/N')
+data2 <- data2[,2]
+head(unlist(data2),30)
+
+data3 <- unlist(data2)
+data3 <- Filter(function(x){nchar(x) >= 2}, data3)
+data3
+
+data3 <- gsub("¼­¿ï","",data3)
+data3 <- gsub("¿äÃ»","",data3)
+data3 <- gsub("Á¦¾È","",data3)
+data3 <- gsub(" ","",data3)
+data3 <- gsub("-","",data3)
+data3 <- gsub("O+","",data3)
+data3
+
+write(unlist(data3), "c:/r/seoul_1.txt")
+seoul_1 <- read.table("c:/r/seoul_1.txt")
+wordcloud2(table(seoul_1))
+```
+
+
+
+library(KoNLP)  
+library(wordcloud)
+library(stringr)
+
+data1 <- readLines("c:/r/seoul.txt") 
+
+useSejongDic()
+
+buildDictionary(ext_dic="sejong",
+                user_dic=data.frame(c("AE¥ìiC¨¢¡¾©ø","¨öAAa¢¥O"),c
+                                    ("ncn")),replace_usr_dic=T)
+
+
+##data2 <- extractNoun(data1)
+data2 <- SimplePos09(data1)
+data2 <- str_match(data2,'([¡Æ¢®-¨¡R]+)/N')
+data2 <- data2[,2]
+head(unlist(data2), 30) 
+data3 <- unlist(data2) 
+data3 <- Filter(function(x) {nchar(x) >= 2} ,data3) 
+data3
+data3 <- gsub("\\d+","", data3) 
+data3 <- gsub("¨ù???¢¯i¨öA","", data3) 
+data3 <- gsub("¨ù???¢¯i","", data3)  
+data3 <- gsub("¢¯aA¡í","", data3)  
+data3 <- gsub("A|¨úE","", data3) 
+data3 <- gsub(" ","", data3)
+data3 <- gsub("-","",data3)
+data3 <- gsub("O+","",data3)
+data3
+
+write(unlist(data3),"c:/r/seoul_2.txt") 
+data4 <- read.table("c:/r/seoul_2.txt")
+
+wordcount <- table(data4) 
+wordcount
+
+head(sort(wordcount, decreasing=T),50)
+
+library(RColorBrewer) 
+palete <- brewer.pal(9,"Set3") 
+wordcloud(names(wordcount),
+          freq=wordcount,
+          scale=c(2,0.5),
+          min.freq = 1,
+          random.order=F,
+          random.color=T,
+          colors=palete)
+
+
+library(wordcloud2)
+wordcloud2(wordcount)
+
+
+
+-----------------------------------------------------------------------------------------------------
+
+# jeju.txt
+
+    - Á¦ÁÖµµ Áö¸íÀ» »Ì¾Æ³»¶ó 
+
+```{r}
+jeju <- readLines("c:/r/jeju.txt")
+jeju <- setdiff(jeju, '')
+jeju <- setdiff(jeju, " ")
+jeju
+```
+
+
+
+```{r}
+t1 <- SimplePos22(jeju)
+str(t1)
+
+t2 <- NULL
+for(i in 1:length(t1)){
+    t2 <- c(t2, str_match_all(t1, '([°¡-ÆR]+)/N')[[i]][,2])
+}
+
+t2
+```
+
+ - ÇùÀçÇØº¯
+```{r}
+grep('ÇùÀç',t2,value = T)
+
+t2 <- gsub("ÇùÀç$", "ÇùÀçÇØº¯", t2)
+t2 <- gsub("ÇùÀçÇØº¯¿åÀå", "ÇùÀçÇØº¯", t2)
+t2 <- gsub("ÇùÀçÇØ¼ö¿åÀå", "ÇùÀçÇØº¯", t2)
+
+grep('ÇùÁ¦',t2,value = T)
+t2 <- gsub("ÇùÁ¦ÇØº¯", "ÇùÀçÇØº¯", t2)
+```
+
+
+```{r}
+grep('¼­±ÍÆ÷.$',t2,value = T)
+
+t2 <- gsub("¼­±ÍÆ÷.$", "¼­±ÍÆ÷", t2)
+```
+ 
+
+```{r}
+grep('¿ìµµ', t2, value = T)
+
+t2 <- gsub("¿ìµµ¹Ú¹°", "¿ìµµ¹Ú¹°°ü", t2)
+
+grep('¿ìµµ°¡½Ã±â', t2, value = T)
+t2 <- gsub("¿ìµµ°¡½Ã±â", "¿ìµµ", t2)
+t2 <- gsub("¿ìµµ¾È", "¿ìµµ", t2)
+t2 <- gsub("¿ìµµ°ü±¤", "¿ìµµ", t2)
+```
+
+
+```{r}
+grep('ÈÖ´Ð½º', t2, value = T)
+
+t2 <- gsub('¾ÆÀÏ·£µå°¡','',t2)
+```
+
+
+```{r}
+grep('ÃµÁö¿¬', t2, value = T)
+
+t2 <- gsub('ÆøÆ÷Æø','ÆøÆ÷',t2)
+```
+
+
+```{r}
+grep('¿ë¸Ó¸®', t2, value = T)
+
+t2 <- gsub('ÇØ¾È¾È','ÇØ¾È',t2)
+```
+
+```{r}
+buildDictionary(ext_dic="sejong",
+                user_dic=data.frame(readLines("c:/r/tour.txt"),c("ncn")),replace_usr_dic=T)
+
+tour <- readLines("c:/r/tour.txt")
+```
+
+```{r}
+grep("Áß¹®", t2, value = T)
+
+t2 <- gsub('Áß¹®$','ÇØ¾È',t2)
+```
+
+
+```{r}
+t3 <- table(t2[t2 %in% tour])
+
+t3 <- orderBy(~-Freq, as.data.frame(t3))
+
+t3[1:10,]
+
+
+wordcloud2(t3)
+wordcloud(t3$Var1, freq = t3$Freq, scale = c(5,.5),
+          random.order = FALSE, rot.per = .1, colors = rainbow(41))
+```
+
+
+```{r}
+t4 <- t2[nchar(t2) > 1]
+t4 <- table(t4)
+wordcloud2(t4[t4 > 1])
+```
+
+
+
+
+¼÷Á¦ : »óÀ§ 10°³ ¸ÊÀ¸·Î Ç¥Çö 
+
+ - TOP 10
+```{r}
+jeju_top10 <- t3[1:10,]
+```
+
+ - ggmap package
+```{r}
+library(ggmap)
+```
+
+
+```{r}
+gc <- geocode(enc2utf8("ÇÑ¶ó»ê"))
+cen <- as.numeric(gc)
+map <- get_googlemap(center = cen, maptype = "roadmap", marker = gc)
+
+ggmap(map)
+```
+
+
+
+
+```{r}
+names <- as.character(jeju_top10$Var1)
+
+gc <- geocode(enc2utf8(names)) ; gc
+
+df <- data.frame(name = names, lon = gc$lon, lat = gc$lat)
+df
+
+cen <- c(mean(df$lon), mean(df$lat))   # Áß½ÉÁÂÇ¥ 
+cen 
+
+map <- get_googlemap(center = cen, maptype = "roadmap", zoom = 10, marker = gc)
+map1 <- get_googlemap(center = cen, maptype = "terrain", zoom = 10, marker = gc)
+map2 <- get_googlemap(center = cen, maptype = "satellite", zoom = 10, marker = gc)
+map3 <- get_googlemap(center = cen, maptype = "hybrid", zoom = 10, marker = gc)
+
+ggmap(map3)
+```
+
+
+
+```{r}
+library(jpeg)
+```
+
+```{r}
+jpeg("c:/r/jeju_top10.jpg")
+
+ggmap(map)
+
+dev.off()
+```
+
+```{r}
+jpeg("c:/r/jeju_top10_1.jpg")
+
+ggmap(map3)
+
+dev.off()
+```
+
+
+
+
+
+
+

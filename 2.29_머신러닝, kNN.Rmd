@@ -1,0 +1,379 @@
+R-29일차(2018.2.5)
+
+    29-1. 머신러닝
+    29-2. kNN
+
+[문제210] fruits.txt 데이터 집합을 아래와 같이 만드시고 그래프도 만들어 보세요.
+
+  과일이름 도수 상대비율 상대백분율
+1       귤    7     0.14         14
+2     딸기   15     0.30         30
+3   복숭아    6     0.12         12
+4     사과    7     0.14         14
+5     체리    4     0.08          8
+6     포도   11     0.22         22
+
+
+ - step.1 : text 파일 열기
+```{r}
+fruits <- readLines("c:/r/fruits.txt")
+fruits
+```
+
+
+ - step.2 : 공란을 기준으로 분리
+```{r}
+f1 <- unlist(strsplit(fruits, ' '));f1
+```
+
+
+※ 참고
+```{r}
+frts <- read.table("c:/r/fruits.txt")
+frts <- as.matrix(frts)
+dim(frts) <- c(nrow(frts)*ncol(frts),1)
+frts
+```
+
+
+ - step.3 : 데이터 프레임 형식으로 변환 
+```{r}
+f2 <- as.data.frame(table(f1));f2
+names(f2) <- c("과일이름", "도수");f2
+```
+
+
+ - step.4 : 상대도수 컬럼 추가
+```{r}
+f3 <- cbind(f2, prop.table(table(f1)))[,-3]
+names(f3)[3] <- "상대도수"
+f3
+```
+
+ - step.5 : 상대백분율 컬럼 추가
+```{r}
+f3$상대백분율 <- f3$상대도수*100
+f3
+```
+
+
+```{r}
+library(colorspace)
+```
+
+
+ - step.6 : 막대그래프로 과일별 갯수 시각화
+```{r}
+bp <- barplot(f3$도수, names.arg = f3$과일이름,
+              ylim = c(0,16), col = heat_hcl(6),
+              main = "과일별 갯수(개)")
+text(bp, f3$도수, labels = f3$도수, pos = 1, font = 11, col = "blue")
+```
+
+
+ - step.7 : 원형그래프로 과일별 비율 시각화
+```{r}
+pie(f3$상대도수, paste0(f3$과일이름,'(',f3$상대백분율,'%)'), col = heat_hcl(6), clockwise = T, main = "과일별 비율(%)")
+```
+
+
+[문제211] R의 점수입니다. 아래와 같은 성적 분류표를 이용해서 학생들의 학점에
+          과락, 과락아님 여부 현황 파악을 막대그래프로 표현하세요.
+
+
+범주   분류 기준     						                                   과락여부
+---   --------------------------------------------------------    -----------   
+A     점수 > 평균 + 1.5 * 표준편차		  		                      과락아님
+B     평균 + 0.5 * 표준편차 < 점수 <= 평균 + 1.5 * 표준편차	      과락아님
+C     평균 - 0.5 * 표준편차 < 점수 <= 평균 + 0.5 * 표준편차	      과락아님
+D     평균 - 1.5 * 표준편차 < 점수 <= 평균 - 0.5 * 표준편차	      과락
+F     점수 <= 평균 - 1.5 * 표준편차			                          과락
+
+
+```{r}
+r <- read.csv("c:/r/r점수.csv")
+names(r) <- "g"
+r
+```
+
+
+```{r}
+table(as.vector(r))
+```
+
+
+```{r}
+avg <- mean(r[,1])
+std <- sd(r[,1])
+avg;std
+
+breaks <- c(0, avg-1.5*std, avg-0.5*std, avg+0.5*std, avg+1.5*std, 100)
+lab <- c("F","D","C","B","A")
+r_grade <- ordered(cut(r[,1], breaks, labels = lab))
+pass_flag <- factor(ifelse(r_grade %in% c("F","D"), "과락", "과락아님"))
+
+r <- cbind(r, r_grade, pass_flag)
+r
+ggplot(r, aes(x = as.character(r_grade), fill = pass_flag))+
+  geom_bar()
+```
+
+
+```{r}
+# r : r 점수 데이터프레임
+# g : r 컬럼명
+# h : 범주(A,B,C,D,F)
+# k : 과락여부(과락, 과락아님)
+
+for(i in 1:nrow(r)){
+  if(r$g[i] > mean(r$g) + 1.5 * sd(r$g)){
+        r$h[i] <- "A"
+        r$k[i] <- "과락아님"
+  }else if(r$g[i] > mean(r$g) + 0.5 * sd(r$g) & r$g[i] <= mean(r$g) + 1.5 * sd(r$g)){
+        r$h[i] <- "B"
+        r$k[i] <- "과락아님"
+  }else if(r$g[i] > mean(r$g) - 0.5 * sd(r$g) & r$g[i] <= mean(r$g) + 0.5 * sd(r$g)){
+        r$h[i] <- "C"
+        r$k[i] <- "과락아님"    
+  }else if(r$g[i] > mean(r$g) - 1.5 * sd(r$g) & r$g[i] <= mean(r$g) - 0.5 * sd(r$g)){
+        r$h[i] <- "D"
+        r$k[i] <- "과락"      
+  }else if(r$g[i] <= mean(r$g) - 1.5 * sd(r$g)){
+        r$h[i] <- "F"
+        r$k[i] <- "과락"     
+  }
+}
+r
+```
+
+
+```{r}
+names(r) <- c("성적", "범주", "과락여부")
+r
+```
+
+
+ - 그림.1
+```{r}
+barplot(r$성적, names.arg = r$범주, ylim = c(0,100),
+        col = ifelse(r$과락여부 == "과락", "darkred", "darkgreen"))
+abline(h = mean(r$성적) - 0.5 * sd(r$성적), col = "red", lwd = 2)
+text(x = 60, y = 60, pos = 3)
+```
+
+```{r}
+library(ggplot2)
+```
+
+
+- 그림.2
+```{r}
+ggplot(r, aes(x = 범주, fill = 과락여부))+
+  geom_bar()
+```
+
+
+ - 선생님 풀이
+```{r}
+score <- read.csv("c:/r/r점수.csv")
+avg <- mean(score[,1])
+std <- sd(score[,1])
+breaks <- c(0, avg-1.5*std, avg-0.5*std, avg+0.5*std, avg+1.5*std, 100)
+lab <- c("F","D","C","B","A")
+r_grade <- ordered(cut(score[,1], breaks, labels = lab))
+pass_flag <- factor(ifelse(r_grade %in% c("F","D"), "과락", "과락아님"))
+table(pass_flag)
+r_tab <- table(r_grade)
+```
+
+```{r}
+barplot(r_tab, col = ifelse(names(r_tab) %in% c("F","D"), "red", "lightblue"))
+legend("topleft", c("과락","과락아님"), bty = "n", fill = c("red", "lightblue"))
+```
+
+
+```{r}
+as.data.frame(r_tab)
+ggplot(as.data.frame(r_tab))
+```
+
+
+
+---------------------------------------------------------------------------------
+
+# 29-1. 머신러닝과 일반 프로그램의 차이
+
+    - 개와 고양이에 대한 이미지를 사람이 일일이 프로그램을 짜서 알려주는게 일반프로그램,
+      머신러닝은 개와 고양이 데이터를 컴퓨터에 넣고 스스로 학습해서 패턴을 알아내게 해서
+      개와 고양이를 인식하게 하는 기술
+    
+    - 머신러닝으로 할 수 있는 일??
+      1. 일반메일과 스팸메일의 분류
+      2. 음성인식
+      3. 주식매매
+      4. 의학, 헬스케어
+      5. 맞춤형 광고
+      6. 게임분석 
+      .... 등 
+      
+    - 학습
+      * 지도학습(superivsed learning)
+         : 레이블이 달려 있는 정해져있는 데이터를 가지고 학습
+           트레이닝 set을 가지고 학습, 이미지, 스팸, 시험성적..
+           (주어진 데이터에 없더라도 패턴을 통해 구별할 수 있다)
+      
+           회귀분석(regression) : 예측, 시험점수 높으려면 공부시간을 많이 해야하나? 
+                
+                      선형회귀, 회귀트리, 모델트리
+                        
+           분류 : 둘 중에 하나를 고르는거, 여러개를 고르는거
+                  
+                      kNN, 결정트리 
+         
+      * 비지도 학습(unsuperivsed learning)
+         : 레이블이 없는 데이터를 가지고 학습
+           유사한 뉴스그룹, 비슷한 단어들을 모은다.
+
+                      군집합, kmean
+                      
+                      
+
+# 29-2. kNN(k Nearest Neighbors) 최근접이웃 
+
+    - 사회적인 관계를 관찰해 보면 
+      대략적으로 비슷한 사람끼리 모이는 성질
+      비슷한 취향의 사람끼리 모여서 동호회를 
+      만들고 비슷한 부류의 계층 사람끼리
+      친분을 맺기도 한다. (유유상종)
+    
+    - 공간적인 관계를 관찰해 보면 
+      피부과(강남), 성형외과(강남), 옷가계(강남역 지하), 
+      가구점(논현동), 한약방(청량리 경동시장)
+      
+    - k의 의미는 부류의 총 갯수 
+    
+    - http://kkokkilkon.tistory.com/14
+    
+
+# 소개팅 데이터 실습
+
+step.1 훈련데이터 준비
+```{r}
+like <- read.csv("c:/r/like.csv", header = T, stringsAsFactors = F)
+names(like) <- c("talk","book","travel","school","tall","skin","muscle","label")
+like  # training set 
+```
+
+
+step.2 테스트 데이터 준비
+```{r}
+test <- data.frame(talk = 70, book = 50, travel = 30, school = 70, tall = 70, skin = 40, muscle = 50)
+test
+```
+
+
+```{r}
+library(class)  #kNN 알고리즘 들어있음 
+```
+
+
+```{r}
+# label 제외한 데이터 프레임
+train <- like[,-8]
+
+# lable 값 
+group <- like[,8]
+```
+
+
+```{r}
+# label을 예측하게 훈련
+knn1 <- knn(train, test, group, k = 3, prob = T);knn1
+```
+
+k는 데이터 셋에 루트를 해서 쓴다? 
+
+
+```{r}
+dist(like[,-8])
+
+# 1 ~ 
+```
+
+
+
+
+[문제212] kNN알고리즘을 통해서 분류한후 테스트 데이터에 class를 확인하세요.
+
+[training dataset]
+
+ ingredient  sweetness  crunchiness     class
+-----------  ---------  ----------- ---------
+       apple        10           9     Fruits
+       bacon         1           4   Proteins
+      banana        10           1     Fruits
+      carrot         7          10 Vegetables
+      celery         3          10 Vegetables
+      cheese         1           1   Proteins
+    cucumber         2           8 Vegetables
+        fish         3           1   Proteins
+       grape         8           5     Fruits
+   green bean         3          7 Vegetables
+      lettuce         1          9 Vegetables
+         nuts         3          6   Proteins
+       orange         7          3     Fruits
+         pear        10          7     Fruits
+      shrimp         2           3   Proteins
+
+
+[test dataset]
+
+ingredient = "tomato", sweetness = 6,  crunchiness = 4
+
+```{r}
+tr <- read.csv("c:/r/kNN.csv", header = T, stringsAsFactors = F)
+tr
+```
+
+
+```{r}
+te <- data.frame(ingredient = "tomato", sweetness = 6,  crunchiness = 4);te
+```
+
+
+```{r}
+train <- tr[,c(-1,-4)]
+test <- te[-1]
+group <- tr[,4]
+
+knn2 <- knn(train ,test, group, k = 3, prob = T)
+knn2
+```
+
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+ggplot(tr, aes(x = sweetness, y = crunchiness))+
+  geom_point(aes(colour = class, pch = class), size = 3)+
+  geom_point(aes(x = te$sweetness, y = te$crunchiness), size = 3)+
+  geom_text(aes(label = ingredient), nudge_y = .4)+
+  geom_text(aes(x = te$sweetness, y = te$crunchiness, label = te$ingredient), col = "red", nudge_y = .4)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

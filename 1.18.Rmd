@@ -1,0 +1,366 @@
+R-18ÀÏÂ÷(2018.1.19)
+
+
+
+
+[¹®Á¦180] 1±ºÀü¿°º´¹ßº´ÇöÈ¯_³âµµº°.csv ¿¡ µ¥ÀÌÅÍ¸¦ °¡Áö°í ±×·¡ÇÁ¸¦ »ý¼ºÇÏ¼¼¿ä.
+
+dis <- read.csv("c:/r/1±ºÀü¿°º´¹ßº´ÇöÈ²_³âµµº°.csv", header = T, stringsAsFactors = F)
+
+```{r}
+dis
+```
+
+```{r}
+library("reshape2") 
+m_dis <- melt(dis)
+m_dis
+```
+
+
+ - sol.1
+```{r}
+library(ggplot2)
+library(colorspace)
+
+ggplot(m_dis, aes(x = ³âµµº°, y = log(value), group = variable, colour = variable))+
+  geom_line()+
+  geom_point()+
+  labs(title = "1±º Àü¿°º´ ¹ßº´ÇöÈ²(³âµµº°)", y = "ÀÎ¿ø¼ö(log)")+
+  guides(fill = guide_legend(title = "¹ü·Ê"))+
+  theme(legend.title.align=0.5, legend.box.background = element_rect(),
+        legend.box.margin = margin(t=0.1,r=0.1, b=0.1, l=0.1,unit='cm'))+
+  theme(panel.grid.major.x = element_line(colour = rainbow_hcl(9), linetype = "dashed"), 
+        panel.grid.minor.x = element_line(colour = rainbow_hcl(9), linetype = "dashed"),
+        panel.grid.major.y = element_line(colour = rainbow_hcl(9), linetype = "dashed"),
+        panel.grid.minor.y = element_line(colour = rainbow_hcl(9), linetype = "dashed"))
+```
+
+
+
+ - sol.2
+```{r}
+library(ggplot2)
+ggplot(m_dis, aes(x = ³âµµº°, y = value, group = variable, colour = variable))+
+  geom_line()+
+  geom_point()+
+  labs(title = "1±º Àü¿°º´ ¹ßº´ÇöÈ²(³âµµº°)", y = "ÀÎ¿ø¼ö")+
+  guides(fill = guide_legend(title = "¹ü·Ê"))+
+  facet_wrap(~variable, scales = "free")+
+  theme(axis.text.x = element_text(angle = 25, size = 7),
+        legend.title.align=0.5, legend.box.background = element_rect(),
+        legend.box.margin = margin(t=0.1,r=0.1, b=0.1, l=0.1,unit='cm'))
+```
+
+
+
+ - ¼±»ý´Ô Ç®ÀÌ 
+```{r}
+dis
+ggplot(m_dis,aes(x=³âµµº°,y=value,group = variable))+
+ geom_col(aes(fill=variable),position="dodge")+
+ geom_text(aes(label = value),position=position_dodge(0.9),vjust=0)+
+ ggtitle("1±ºÀü¿°º´¹ßº´ÇöÈ¯",subtitle="³âµµº°")+
+ theme(plot.title = element_text(lineheight=.8, face="bold",color="darkblue",hjust=0.5))+
+ theme(plot.subtitle = element_text(lineheight=.8, face="bold",color="darkblue",hjust=0.5))+
+ labs(colour="Á¾·ù")
+```
+ 
+
+
+
+I am a student
+
+³ª´Â ÇÐ»ýÀÔ´Ï´Ù.
+
+¸í»ç¸¦ »Ì¾Æ³»? ´©°¡ ¸¸µé¾ú´Ù ±×°É ¾²ÀÚ°í?
+
+
+```{r}
+install.packages("KoNLP")
+library("KoNLP")              # »çÀü¿¡ jdk ¼³Ä¡ÇØ¾ß ÇÔ 
+```
+
+
+ - 
+ 
+```{r}
+useSejongDic()
+```
+
+
+```{r}
+text1 <- "RÀº ¿ÀÇÂ¼Ò½º·Î Åë°è, ±â°èÇÐ½À, ±ÝÀ¶, »ý¹°Á¤º¸ÇÐ, ±×·¡ÇÈ½º¿¡ ÀÌ¸£´Â ´Ù¾çÇÑ Åë°è ÆÐÅ°Áö¸¦ °®Ãß°í ÀÖ´Â ÁÁÀº ÇÁ·Î±×·¥ÀÌ´Ù."
+```
+
+
+```{r}
+str_split(text1, ' ')  # stringr package
+```
+
+
+
+```{r}
+strsplit(text1,'')
+```
+
+
+
+ - extractNoun() : ÇÑ±ÛÀÇ ¸í»ç¸¦ ÃßÃâÇÏ´Â ÇÔ¼ö(ÇÑ³ª´® ºÐ¼®±â)
+     
+          
+          ¸í»ç(Ù£Þò) : »ç¹°, »ç¶÷, Àå¼ÒÀÇ ÀÌ¸§À» ³ªÅ¸³»´Â Ç°»çÀÌ´Ù.
+     
+```{r}
+extractNoun(text1)
+```
+ 
+
+ - SimplePos09() : ÇÑ±ÛÀÇ Ç°»ç¸¦ ÃßÃâÇÏ´Â ÇÔ¼ö
+
+```{r}
+text2 <- SimplePos09(text1)
+```
+
+
+ - str_match : ÆÐÅÏ ÀÏÄ¡ µÇ´Â ¹®ÀÚ Ã£±â 
+ 
+```{r}
+text_noun <- str_match(text2, '([A-Z°¡-ÆR]+)/N')  # + : Àû¾îµµ ÇÑ¹øÀº ÀÖ´Â´Ù 
+as.vector(na.omit(text_noun[,2]))
+```
+
+
+```{r}
+str_locate(grep('N',text2, value = T),'/N')
+```
+
+
+
+```{r}
+extractNoun(text1)
+```
+
+
+```{r}
+.libPaths()
+```
+
+C:\Users\STU\Documents\R\win-library\3.4\KoNLP_dic\current : »çÀü(¸í»çÇü) µî·Ï 
+
+
+ - »çÀü È£ÃâÇÏ´Â ¼ø°£ ³»°¡ ÀúÀåÇÑ ´Ü¾î´Â ÃÊ±âÈ­ 
+
+```{r}
+useSejongDic()
+dic_user.txt
+```
+
+ - dic Ãß°¡ 
+```{r}
+buildDictionary(ext_dic = "sejong", 
+                user_dic = data.frame(c("±â°èÇÐ½À", "»ý¹°Á¤º¸ÇÐ", "´Ù¾çÇÑ"), c("ncn")),
+                replace_usr_dic = T)
+```
+
+
+
+
+```{r}
+extractNoun(text1)
+```
+
+
+
+----------------------------------------------------------------------------------------------------------------
+
+# ¿¬¼³¹® ´Ü¾î ºóµµ¼ö(wordclound È°¿ë)
+
+```{r}
+install.packages("wordcloud")
+library("wordcloud")
+```
+
+
+ - readLines() : lineº° ÀÐ¾îµå¸² 
+```{r}
+text <- readLines("c:/r/¹®ÀçÀÎ´ëÅë·ÉÃëÀÓ»ç.txt")
+text
+```
+
+
+```{r}
+noun1 <- unlist(extractNoun(text))
+```
+
+```{r}
+noun1 <- setdiff(noun1, '')
+noun1 <- str_replace(noun1, "´ëÅë·ÉÀÇ", "´ëÅë·É")
+```
+
+
+```{r}
+noun2 <- unlist(sapply(text, extractNoun, USE.NAMES = FALSE))
+unlist(lapply(text, extractNoun))
+```
+
+
+ - table : vector °Ç¼ö ¼À
+
+```{r}
+word_cn1 <- table(noun1) 
+word_cn2 <- table(noun2)
+```
+
+
+
+```{r}
+head(sort(word_cn1, decreasing = TRUE), 10)
+```
+
+
+
+```{r}
+pal <- brewer.pal(8, "Dark2") ; pal
+
+wordcloud(names(word_cn1), freq = word_cn1, scale = c(5,.5),
+          random.order = FALSE, rot.per = .1, colors = pal)
+```
+
+
+
+    names : Ãâ·ÂÇÒ ´Ü¾îµé
+    freq : ºóµµ¼ö
+    scale : ±ÛÀÚÀÇ Å©±â c(Å«°ª, ÀÛÀº°ª)
+    min.freq : ÃÖ¼Ò ºóµµ¼ö¸¦ ÁöÁ¤
+    max.words : ÀÌ°ª ÀÌ»óÀÇ ºóµµ¼ö¸é »èÁ¦
+    random.order : Ãâ·ÂµÇ´Â ¼ø¼­¸¦ ÀÓÀÇ·Î ÁöÁ¤  
+    random.color : ±ÛÀÚÀÇ »ö»óÀ» ÀÓÀÇ·Î ÁöÁ¤ 
+    rot.per : ´Ü¾î¹èÄ¡¸¦ 90µµ °¢µµ·Î Ãâ
+    colors : Ãâ·ÂµÉ ´Ü¾îµéÀÇ »ö»ó 
+
+
+```{r}
+word_df <- as.data.frame(word_cn1)
+names(word_df) <- c("word","cnt")
+
+orderBy(~-cnt,word_df)
+word_df <- word_df[1 < str_length(word_df$word) & word_df$cnt >= 5,]
+
+word_df$word<-gsub("´ëÅë·É\\S","´ëÅë·É",word_df$word)
+
+barplot(word_df$cnt, names.arg = word_df$word, las = 2)
+
+str_c("´ëÇÑ","¹Î±¹")
+```
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------
+
+```{r}
+install.packages("wordcloud2")
+library(wordcloud2)
+```
+
+
+
+```{r}
+fl <- c("³»°¡ ±×ÀÇ ÀÌ¸§À» ºÒ·¯ÁÖ±â Àü¿¡´Â 
+         ±×´Â ´Ù¸¸ 
+         ÇÏ³ªÀÇ ¸öÁþ¿¡ Áö³ªÁö ¾Ê¾Ò´Ù. 
+
+         ³»°¡ ±×ÀÇ ÀÌ¸§À» ºÒ·¯ÁÖ¾úÀ» ¶§ 
+         ±×´Â ³ª¿¡°Ô·Î ¿Í¼­ 
+         ²ÉÀÌ µÇ¾ú´Ù. 
+
+         ³»°¡ ±×ÀÇ ÀÌ¸§À» ºÒ·¯ÁØ °ÍÃ³·³ 
+         ³ªÀÇ ÀÌ ºû±ò°ú Çâ±â¿¡ ¾Ë¸Â´Â 
+         ´©°¡ ³ªÀÇ ÀÌ¸§À» ºÒ·¯ ´Ù¿À. 
+         ±×¿¡°Ô·Î °¡¼­ ³ªµµ 
+         ±×ÀÇ ²ÉÀÌ µÇ°í ½Í´Ù. 
+
+          ¿ì¸®µéÀº ¸ðµÎ 
+           ¹«¾ùÀÌ µÇ°í ½Í´Ù. 
+           ³ª´Â ³Ê¿¡°Ô ³Ê´Â ³ª¿¡°Ô 
+           ÀØÇôÁöÁö ¾Ê´Â ÇÏ³ªÀÇ ÀÇ¹Ì°¡ µÇ°í ½Í´Ù." )
+wordcloud2(table(extractNoun(fl)))
+```
+
+
+
+```{r}
+
+empty_house <- "»ç¶ûÀ» ÀÒ°í ³ª´Â ¾²³×
+                Àß ÀÖ°Å¶ó, Âª¾Ò´ø ¹ãµé¾Æ
+                Ã¢¹ÛÀ» ¶°µ¹´ø °Ü¿ï ¾È°³µé¾Æ
+                ¾Æ¹«°Íµµ ¸ð¸£´ø ¬YºÒµé¾Æ, Àß ÀÖ°Å¶ó
+                °øÆ÷¸¦ ±â´Ù¸®´ø Èò Á¾ÀÌµé¾Æ
+                ¸Á¼³ÀÓÀ» ´ë½ÅÇÏ´ø ´«¹°µé¾Æ
+                Àß ÀÖ°Å¶ó, ´õ ÀÌ»ó ³» °ÍÀÌ ¾Æ´Ñ ¿­¸Áµé¾Æ
+                Àå´ÔÃ³·³ ³ª ÀÌÁ¦ ´õµë°Å¸®¸ç ¹®À» Àá±×³×
+                °¡¿²Àº ³» »ç¶û ºóÁý¿¡ °¤Çû³×"
+
+emp_house_cnt <- table(extractNoun(empty_house))
+
+class(emp_house_cnt)
+
+wordcloud2(emp_house_cnt)
+```
+
+
+```{r}
+eh <- melt(emp_house_cnt)
+names(eh) <- c("word","cnt")
+eh
+
+ggplot(eh, aes(x = word, y = cnt, fill = word))+
+  geom_bar(stat = "identity")
+```
+
+
+
+
+
+```{r}
+wordcloud2(word_cn2, shape = "triangle")
+wordcloud2(table(c("")))
+Map(extractNoun, text)
+```
+
+
+
+
+
+```{r}
+table(str_match(SimplePos09(text), '([A-Z°¡-ÆR]+)/N')[,2])
+```
+
+
+
+
+
+
+
+```{r}
+m <- melt(fruits_sales, id = c('name','year'))
+m
+dcast(m, name+year~variable)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

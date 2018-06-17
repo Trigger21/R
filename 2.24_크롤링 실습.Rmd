@@ -1,0 +1,182 @@
+R-24ÀÏÂ÷(2018.1.29)
+
+    24-1. Å©·Ñ¸µ ½Ç½À
+
+
+```{r}
+library(rvest)
+library(dplyr)
+```
+
+
+```{r}
+html <- read_html("https://search.naver.com/search.naver?query=%EC%8A%A4%ED%85%8C%ED%8C%90+%EC%BB%A4%EB%A6%AC&where=news&ie=utf8&sm=nws_hty")
+html
+```
+
+```{r}
+url <- html_nodes(html, css = ".news")%>%
+       html_nodes("a")%>%
+       html_attr("href")
+url <- unique(url)
+url <- url[-1]
+url
+```
+
+
+```{r}
+html1 <- read_html(url[1])
+html1
+
+html_nodes(html1, "#article")%>%
+  html_text()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+text <- NULL
+html <- NULL
+
+for(i in 600:670){
+  #if(nchar(i) == 1){ i <- paste0("00",i) }
+  #else if(nchar(i) == 2){ i <- paste0("0",i) }
+  
+  html <- read_html(paste0("http://sports.news.naver.com/basketball/news/read.nhn?oid=486&aid=0000000", i))
+  
+  text <- c(text, html_nodes(html, "#content")%>% html_text())
+}
+```
+
+
+```{r}
+text
+```
+
+
+
+```{r}
+html <- read_html("https://section.blog.naver.com/Search/Post.nhn?pageNo=1&rangeType=ALL&orderBy=sim&keyword=%ED%95%98%EC%A1%B0%EB%8C%80")
+html
+
+url <- html_nodes(html, css = ".list_search_post .info_post .title_post")%>%
+       html_nodes("a")%>%
+       html_attr("href")
+url       
+```
+
+
+
+# ´ÏÃ¼ ¾î·Ï 
+
+```{r}
+html <- read_html("https://ko.wikiquote.org/wiki/%ED%94%84%EB%A6%AC%EB%93%9C%EB%A6%AC%ED%9E%88_%EB%8B%88%EC%B2%B4")
+html
+```
+
+
+```{r}
+text <- html_nodes(html, css = "#bodyContent")%>%
+        html_text()
+text
+```
+
+```{r}
+library(KoNLP)
+useSejongDic()
+useNIADic()
+library(stringr)
+```
+
+
+```{r}
+text1 <- gsub("[[:cntrl:]]", " ", text)
+text1
+text2 <- SimplePos09(text1)
+text2
+text3 <- unlist(str_match_all(text2, '([°¡-ÆR]+)/N'))
+text3 <- text3[!str_detect(text3, "/")]
+text3
+
+text2[grep("<", text2)] <- ""
+text2[grep("À§Å°", text2)] <- ""
+text2[grep("´ÏÃ¼", text2)] <- ""
+
+text3 <- SimplePos09(text2)
+text3 <- text3[!str_detect(text3, 
+          "°Í|³â|±×|³ª|¼ö|ÀÚ|ÀÏ|¸®|±Û|¸»|³ª|µ¥|´ö|¸¦|¼Ó|Àú|ÆÇ|Áß|¸¸|¾È|ÀÌ|³Ê|Áö|¼¼|µí|´ë|»ì|¶§")]
+text4 <- sort(table(text3), decreasing = T)
+head(text4, 10)
+```
+
+```{r}
+library(wordcloud2)
+wordcloud2(head(text4, 30))
+```
+
+
+
+```{r}
+library(colorspace)
+```
+
+
+```{r}
+barplot(head(text4, 10), cex.names = .8, las = 2, 
+        ylim = c(0, 20), col = heat_hcl(10))
+```
+
+
+
+```{r}
+html <- read_html("https://www.youtube.com/watch?v=U1BH36BQrOw")
+html
+```
+
+```{r}
+txt <- html_nodes(html, "#content")%>%
+       html_text()
+txt
+```
+
+
+
+```{r}
+install.packages("RSelenium")
+library(RSelenium)
+```
+
+```{r}
+Sys.sleep(1) # 1ÃÊ µÚ¿¡ ½ÃÀÛÇØ¶ó 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

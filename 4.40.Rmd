@@ -1,0 +1,364 @@
+---
+title: "R-40ÀÏÂ÷(2018.2.22)"
+---
+
+
+
+[¹®Á¦244]advice.csv ÆÄÀÏ¿¡ ÀÖ´Â µ¥ÀÌÅÍ¸¦ ºÐ¼® ÇÏ¼¼¿ä.
+
+```{r}
+advice <- read.csv("c:/r/advice.csv", stringsAsFactors = F)
+advice
+```
+
+```{r}
+attach(advice)
+CONTENTS
+```
+
+```{r}
+library(KoNLP)
+library(stringr)
+```
+
+```{r}
+useSejongDic()
+buildDictionary(ext_dic = "sejong", 
+                user_dic = data.frame(c("È¯ºÒ", "±â½º"), c("ncn")),
+                replace_usr_dic = T)
+t1 <- unlist(extractNoun(CONTENTS))
+t2 <- gsub("È¯ºÒÇØÁÖ¼¼¿ä", "È¯ºÒ", t1)
+t3 <- t2[!t2 == "¾Èµé¸²"]
+text <- head(sort(table(t3), decreasing = T),8)
+text
+#text1 <- str_match_all(SimplePos09(CONTENTS), "([°¡-ÆR]+)/N")
+#text2 <- unlist(text1)
+#text3 <- text2[-grep("/N$",text2)]
+#text4 <- gsub("È¯ºÒÇØÁÖ¼¼¿ä", "È¯ºÒ", text3)
+#text4 <- gsub("ÁöÀúºÐÇÏ°Ô", "ÁöÀúºÐ", text4)
+#sort(table(text4), decreasing = T)
+```
+
+```{r}
+library(wordcloud2)
+wordcloud2(text)
+```
+
+
+
+¡Ø rJava ¹®Á¦½Ã¿¡ remove.packages -> install.packages ÇØº¸ÀÚ
+   ¼±»ý´Ô ÆÁ : remove.packages("rJava",lib=.libPaths()[1])
+```{r}
+install.packages("KoNLP")
+install.packages("rJava")
+remove.packages('rJava')
+library(rJava)
+library(RJDBC)
+library(KoNLP)
+library(DBI)
+Sys.getenv()
+sessionInfo()
+.jinit()
+Sys.setenv(JAVA_HOME = "C:/Program Files/Java/jre1.8.0_161")
+```
+
+
+
+[¹®Á¦245] ¹®Á¦244¹øÀÇ °á°ú ´Ü¾îµéÀ» °¡Áö°í ¾Æ·¡Ã³·³ ¸¸µé¾î º¸¼¼¿ä.
+
+
+È¯ºÒ   ±âºÐ   Æ÷Àå   ¼±¹° ÀÌ¾îÆù   Á¤Ç° ÁöÀúºÐ È­ÀåÇ° 
+10      5      3      2      2      2      2      2 
+
+
+
+             È¯ºÒ ±âºÐ Æ÷Àå ¼±¹° ÀÌ¾îÆù Á¤Ç° ÁöÀúºÐ È­ÀåÇ°
+2017-01-10    0    0    1    0      0    0      1      0
+2017-01-11    1    0    0    0      0    0      0      1
+2017-01-12    1    0    0    0      1    1      0      0
+2017-01-13    1    0    0    0      0    1      0      0
+2017-01-14    1    1    0    0      0    0      0      0
+2017-01-15    1    1    0    0      0    0      0      0
+2017-01-16    1    0    0    0      1    0      0      0
+2017-01-17    1    1    1    1      0    0      0      0
+2017-01-18    1    1    0    0      0    0      0      0
+2017-01-19    1    0    0    0      0    0      0      0
+2017-01-20    1    1    1    1      0    0      1      0
+
+
+```{r}
+# text <- head(sort(table(t3), decreasing = T),8)
+text
+```
+
+
+```{r}
+t4 <- t3[t3 %in% names(text)]
+length(t4) == sum(text)  # 28
+```
+
+```{r}
+ad <- advice
+ad
+v <- matrix(rep(0,nrow(ad)*length(text)), nrow(ad), length(text))
+for(i in 1:length(text)){
+   v[grep(names(text)[i], CONTENTS),i] <- 1
+}
+v <- as.data.frame(v)
+v
+names(v) <- names(text)
+v1 <- as.matrix(v, "Transaction")
+rownames(v1) <- ad[,1]
+v1
+```
+
+ - ¿¬°ü±ÔÄ¢ ºÐ¼®
+```{r}
+library(arules)
+```
+
+```{r}
+rules1 <- apriori(v1, parameter = list(supp = 0.4, conf = 0.6, target = "rules", minlen = 2))
+inspect(sort(rules1))
+```
+
+```{r}
+m <- t(v1) %*% v1
+m1 <- m - diag(diag(m));m1
+```
+-> '±âºÐ' ´Ü¾î°¡ ¾ð±ÞµÇ¸é 'È¯ºÒ'À» ¿ä±¸ÇÒ °¡´É¼ºÀÌ ³ô´Ù.
+
+ - ±×·¡ÇÁ ±×¸®±â
+```{r}
+library(sna)
+library(rgl)
+```
+
+```{r}
+gplot(m1, displaylabels = T,
+          label.col = "blue",
+          vertex.cex = diag(m)/2,
+          vertex.col = "purple",
+          arrowhead.cex = .4,
+          edge.col = "darkorange",
+          edge.lwd = m1)
+```
+
+
+ - ¼±»ý´Ô Ç®ÀÌ
+
+[¹®Á¦244] 
+
+library(KoNLP)
+library(wordcloud2)
+
+useSejongDic()
+
+# ¼¼Á¾µñ¿¡ ¾ø´Â ´Ü¾î Ãß°¡
+```{r}
+buildDictionary(ext_dic="woorimalsam",user_dic=data.frame("Å«¸¾¸Ô°í","ncn"),replace_usr_dic=F)
+buildDictionary(ext_dic="woorimalsam",user_dic=data.frame("È¯ºÒ","ncn"),replace_usr_dic=F)
+buildDictionary(ext_dic="woorimalsam",user_dic=data.frame("´çÀå","ncn"),replace_usr_dic=F)
+```
+
+
+```{r}
+get_dictionary('woorimalsam') # Àâ´Ù±¸¸®
+get_dictionary('sejong')      # ¸í»ç
+get_dictionary('insighter')   # µ¿»ç
+```
+
+
+# °Ô½ÃÆÇ ±Û ºÒ·¯¿Í¼­ ´ã±â
+advice <- read.csv("c:/r/advice.csv", header=T, stringsAsFactors=F)
+str(advice)
+```{r}
+text <- advice[,2]
+text
+```
+
+
+# Á¤Á¦ÀÛ¾÷
+```{r}
+text<-gsub('±â½º°¡','±â½º',text)
+text<-gsub('Ã·¿¡¿ÔÀ»¶§µµ','Ã·¿¡ ¿ÔÀ»¶§µµ',text)
+text<-gsub('ÇÔºÎ·Î´Ù·é°Íµµ¾Æ´Ï¿©¼­','ÇÔºÎ·Î ´Ù·é °Íµµ ¾Æ´Ï¿©¼­',text)
+text<-gsub('Ã·¿¡¿ÔÀ»¶§µµ','Ã·¿¡ ¿ÔÀ»¶§µµ',text)
+text<-gsub('È¯ºÒÇØÁÖ¼¼¿ä','È¯ºÒ ÇØÁÖ¼¼¿ä',text)
+text<-gsub('´çÀå±ÞÇØ¼­','´çÀå ±ÞÇØ¼­',text)
+text<-gsub('[^°¡-ÆR]',' ',text)
+word<-extractNoun(text)   
+word
+#word1<-unlist(strsplit(word1,' '))
+word1<-unlist(word)
+word1<-Filter(function(x){nchar(x)>=2},word1)  # Filter() È°¿ë : ¹®ÀÚ±æÀÌ 2°³ ÀÌ»ó¸¸ ÃßÃâ
+word1
+word2<-c()
+for (i in word1){
+  if (!i %in% c('¾Èµé','ÇÏ·Á','¾Æ´Ñ°¡ºÁ¿ä','ÀÖ´Â°Å','ÇØÁÖ')){
+    word2<-c(word2,i)
+  }
+}
+word2
+```
+
+
+
+
+# ºóµµ¼ö Ã¼Å©
+```{r}
+word2
+word_cn<-table(word2) 
+word_cn
+```
+
+
+# wordcloud ±×¸®±â
+```{r}
+library(wordcloud)
+library(RColorBrewer)
+wordcloud(names(word_cn),freq=word_cn,min.freq=1,scale=c(3,1),
+          random.order=F,random.color =T,
+          colors=brewer.pal(8,'Dark2'))
+
+wordcloud2(word_cn, size = 1,shape='star')
+```
+
+
+[¹®Á¦245]
+```{r}
+word_sort<-sort(word_cn,decreasing=T)   
+word_sort<-word_sort[word_sort>=2]   # ºóµµ¼ö 2°³ ÀÌ»ó¸¸
+word_sort
+res_sort<-as.matrix(word_sort)
+res_sort
+keyword<-rownames(word_sort)
+keyword  # ´Ü¾îµé
+```
+
+
+# matrix·Î ¸¸µé±â
+```{r}
+data<-c()
+for (i in 1:length(word)){
+  index<-intersect(word[[i]],keyword)
+  data<-rbind(data,table(index)[keyword])
+}
+data
+```
+
+```{r}
+date <- advice[,1]
+date
+```
+
+
+
+# NAÁ¦°Å(0À¸·Î ´ëÃ¼)
+```{r}
+data<-ifelse(is.na(data),0,data)
+data
+colnames(data)<-keyword
+rownames(data)<-date
+data
+```
+
+```{r}
+res<-as.data.frame(data)
+res
+str(res) 
+```
+
+   
+
+# ¿¬°üºÐ¼®
+```{r}
+library(arules)
+trans<-as.matrix(res,'Transaction')  # 'Transaction' : 0À» ¹Ù¶óº¸Áö ¾Ê°Ú´Ù.
+res_rul<-apriori(trans, parameter = list(supp=0.4, conf = 0.9,  target = "rules"))
+```
+
+```{r}
+inspect(sort(res_rul,by='lift'))  # by='lift' : lift °ª º¸·Á¸é 
+```
+
+lhs       rhs    support   confidence lift
+[1] {±âºÐ} => {È¯ºÒ} 0.4545455 1.0000000  1.1 
+[2] {}     => {È¯ºÒ} 0.9090909 0.9090909  1.0 
+
+```{r}
+inspect(subset(res_rul,items %in% '±âºÐ'))  # subset() : Á¶°Ç¿¡ ¸¸Á·ÇÏ´Â µ¥ÀÌÅÍ¸¦ ¼±ÅÃ(NAÇà X)
+```
+
+
+-------------------------------------
+
+
+# 40-1. read.transactions()
+
+    - ¿¬°üºÐ¼®ÇÒ ÀÚ·á´Â transactions matrix·Î ¹ÞÀÚ(ÈÎ¾À ÆíÇÏ´Ù)
+
+step.1 : µ¥ÀÌÅÍ ´Ù¿î
+```{r}
+library(arules)
+#groceries <- read.transactions("http://www.sci.csueastbay.edu/~esuess/classes/Statistics_6620/Presentations/ml13/groceries.csv", sep = ",")
+groceries <- read.transactions("c:/r/groceries.csv", sep = ",")
+str(groceries)
+```
+
+step.2 : µ¥ÀÌÅÍ ºÐ¼®
+```{r}
+summary(groceries) # µ¥ÀÌÅ¸ ÇÙ½É¿ä¾à
+```
+
+ - Àå¹Ù±¸´Ï ¸ñ·Ï È®ÀÎ
+```{r}
+inspect(groceries[1:5])
+```
+
+
+# 40-2. itemFrequency() : Á¦Ç°ÀÌ Æ÷ÇÔÇÑ °Å·¡ÀÇ ºñÀ²
+```{r}
+itemFrequency(groceries[,1:3])
+```
+
+
+# 40-3. itemFrequencyPklot(data, support = N) : Á¦Ç°ÀÌ Æ÷ÇÔÇÑ °Å·¡ÀÇ ºñÀ²À» ±×·¡ÇÁ·Î ±×¸®ÀÚ
+```{r}
+itemFrequencyPlot(groceries, support = 0.1)
+# topN : »óÀ§°ª Ãâ·Â
+itemFrequencyPlot(groceries, topN = 20)
+```
+
+
+# 40-4. image()
+```{r}
+image(groceries[1:5])
+```
+
+```{r}
+image(sample(groceries, 100))
+```
+
+
+step.3 : ¿¬°üºÐ¼® 
+```{r}
+groceryrules <- apriori(groceries, parameter = list(supp = 0.006, conf = 0.25, minlen = 2))
+inspect(sort(groceryrules, by = "lift")[1:5])
+inspect(subset(groceryrules, items %in% 'berries'))  # berries¸¸ ÃßÃâ
+summary(groceryrules)
+```
+
+
+ - Á¤Á¦ÇÑ ÆÄÀÏ csv·Î ÀúÀåÇÏ±â
+```{r}
+write(groceryrules, file = "c:/r/groceryrules.csv", sep = ",", quote = T, row.names = F)
+```
+
+
+ - data.frame Çü½ÄÀ¸·Î º¯È¯ÇØ¼­ ÀúÀå 
+```{r}
+groceryrules_df <- as(groceryrules, "data.frame")
+groceryrules_df
+```
+
